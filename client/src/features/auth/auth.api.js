@@ -18,7 +18,20 @@ export const authApi = api.injectEndpoints({
       query: () => ({ url: '/auth/logout', method: 'POST' }),
     }),
     verifyEmail: builder.mutation({
-      query: (token) => ({ url: '/auth/verify-email', method: 'POST', body: { token } }),
+      query: ({ code, email }) => ({
+        url: '/auth/verify-email',
+        method: 'POST',
+        body: { code, email },
+      }),
+      transformResponse: unwrapData,
+      invalidatesTags: ['Me'],
+    }),
+    resendVerification: builder.mutation({
+      query: (email) => ({
+        url: '/auth/resend-verification',
+        method: 'POST',
+        body: { email },
+      }),
       transformResponse: unwrapData,
     }),
     forgotPassword: builder.mutation({
@@ -51,6 +64,7 @@ export const {
   useRefreshMutation,
   useLogoutMutation,
   useVerifyEmailMutation,
+  useResendVerificationMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useMeQuery,

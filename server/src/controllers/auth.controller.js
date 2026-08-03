@@ -25,14 +25,14 @@ const isNativeClient = (req) => req.get('x-client-type') === 'mobile';
 /* ------------------------------------------------------------------ */
 
 const register = catchAsync(async (req, res) => {
-  const { user, verificationToken } = await authService.register(req.body);
+  const { user, verificationCode } = await authService.register(req.body);
 
   const data = { user: user.toPublicJSON() };
-  if (!env.isProduction) data.dev = { verificationToken };
+  if (!env.isProduction) data.dev = { verificationCode };
 
   res.status(201).json(
     ApiResponse.created(
-      'Inscription réussie. Vérifiez votre boîte e-mail.',
+      'Inscription réussie. Un code de vérification a été envoyé par e-mail.',
       data
     )
   );
@@ -110,11 +110,28 @@ const refresh = catchAsync(async (req, res) => {
 /* ------------------------------------------------------------------ */
 
 const verifyEmail = catchAsync(async (req, res) => {
-  const user = await authService.verifyEmail(req.body.token);
+  const user = await authService.verifyEmail({
+    code: req.body.code,
+    email: req.body.email,
+  });
   res.json(
-    ApiResponse.ok('Adresse e-mail vérifiée. Compte activé.', {
+    ApiResponse.ok('Adresse e-mail vérifiée.', {
       user: user.toPublicJSON(),
     })
+  );
+});
+
+const resendVerification = catchAsync(async (req, res) => {
+  const code = await authService.resendVerificationEmail(req.body.email);
+
+  const data = {};
+  if (!env.isProduction) data.dev = { verificationCode: code || null };
+
+  res.json(
+    ApiResponse.ok(
+      'Si un compte non vérifié existe pour cette adresse, un nouveau code vient d’être envoyé.',
+      data
+    )
   );
 });
 
@@ -176,6 +193,7 @@ module.exports = {
   logout,
   refresh,
   verifyEmail,
+  resendVerification,
   forgotPassword,
   resetPassword,
   changePassword,

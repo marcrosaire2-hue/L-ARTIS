@@ -1,46 +1,58 @@
 /**
- * Jetons de style partagés.
- *
- * React Native n'a ni CSS ni Tailwind : les classes du site web n'ont aucun
- * équivalent ici. On centralise donc couleurs, espacements et typographie
- * pour éviter que chaque écran ne réinvente les siens.
+ * Jetons de style — langage Monpermis adapté à L-ARTIS.
+ * Crème (splash), vert marque, navy d'autorité, feuille auth claire.
  */
 export const colors = {
-  brand: '#059669',
-  brandDark: '#047857',
+  brand: '#00B050',
+  brandDark: '#008F40',
+  brandBright: '#00D566',
   brandLight: '#d1fae5',
   brandSurface: '#ecfdf5',
-  accent: '#f59e0b',
+  accent: '#F5B31B',
   whatsapp: '#25D366',
 
-  text: '#0f172a',
-  textMuted: '#64748b',
-  textLight: '#94a3b8',
+  navy: '#0B1F17',
+  navyMuted: '#3d5a4a',
+
+  cream: '#FAF9F6',
+  panel: '#F4F7FB',
+
+  text: '#0B1F17',
+  textMuted: '#3d5a4a',
+  textLight: '#7a9084',
 
   background: '#ffffff',
-  surface: '#f8fafc',
-  border: '#e2e8f0',
+  surface: '#F8FAFC',
+  border: 'rgba(11, 31, 23, 0.10)',
 
-  danger: '#dc2626',
+  danger: '#E85D3B',
   dangerSurface: '#fef2f2',
-  success: '#059669',
+  success: '#00B050',
+};
+
+export const gradients = {
+  green: ['#00D566', '#008F40'],
+  heroVeil: ['rgba(11,31,23,0.35)', 'rgba(11,31,23,0.55)', 'rgba(11,31,23,0.92)'],
+  authVeil: ['rgba(11,31,23,0.55)', 'rgba(11,31,23,0.82)', '#0B1F17'],
 };
 
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 };
 
-export const radius = { sm: 8, md: 12, lg: 16, xl: 24, full: 999 };
+export const radius = { sm: 8, md: 14, lg: 20, xl: 28, full: 999 };
 
 export const typography = {
-  title: { fontSize: 28, fontWeight: '700', color: colors.text },
-  heading: { fontSize: 20, fontWeight: '600', color: colors.text },
-  body: { fontSize: 16, color: colors.text },
-  muted: { fontSize: 14, color: colors.textMuted },
-  small: { fontSize: 13, color: colors.textLight },
+  title: { fontSize: 28, fontWeight: '800', color: colors.text, letterSpacing: -0.4 },
+  heading: { fontSize: 20, fontWeight: '700', color: colors.text },
+  body: { fontSize: 16, color: colors.text, lineHeight: 24 },
+  muted: { fontSize: 14, color: colors.textMuted, lineHeight: 20 },
+  small: { fontSize: 13, color: colors.textLight, lineHeight: 18 },
+  kicker: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: colors.brand,
+  },
 };
 
-/**
- * Hauteur minimale des zones tactiles. 44 points est le seuil au-dessous
- * duquel une cible devient difficile à atteindre au pouce — critique ici,
- * l'artisan manipulant souvent le téléphone d'une seule main sur un chantier.
- */
-export const TOUCH_TARGET = 48;
+export const TOUCH_TARGET = 52;

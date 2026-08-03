@@ -1,8 +1,10 @@
 /**
- * Service de notifications — crée les enregistrements Notification.
+ * Service de notifications — crée et lit les enregistrements Notification.
  * (Le push temps réel Socket.IO sera branché en Phase 5.)
  */
 const { Notification, User } = require('../models');
+const ApiError = require('../utils/ApiError');
+const { PAGINATION } = require('../constants');
 
 /**
  * Notifie un utilisateur précis.
@@ -27,4 +29,51 @@ async function notifyAdmins(type, title, message = '', data = {}) {
   return docs.length;
 }
 
-module.exports = { notifyUser, notifyAdmins };
+async function listMyNotifications(userId, { page = 1, limit = PAGINATION.DEFAULT_LIMIT, unreadOnly }) {
+  const filters = { user: userId };
+  if (unreadOnly === 'true' || unreadOnly === true) {
+    filters.readAt = null;
+  }
+
+  const [pageResult, unreadCount] = await Promise.all([
+    Notification.paginate({
+      page,
+      limit,
+      filters,
+      sort: { createdAt: -1 },
+    }),
+    Notification.countDocuments({ user: userId, readAt: null }),
+  ]);
+
+  return { ...pageResult, unreadCount };
+}
+
+async function markAsRead(userId, notificationId) {
+  const doc = await Notification.findOneAndUpdate(
+    { _id: notificationId, user: userId, readAt: null },
+    { $set: { readAt: new Date() } },
+    { new: true }
+  );
+  if (!doc) {
+    const exists = await Notification.exists({ _id: notificationId, user: userId });
+    if (!exists) throw new ApiError(404, 'Notification introuvable');
+    return Notification.findById(notificationId);
+  }
+  return doc;
+}
+
+async function markAllAsRead(userId) {
+  const result = await Notification.updateMany(
+    { user: userId, readAt: null },
+    { $set: { readAt: new Date() } }
+  );
+  return { modifiedCount: result.modifiedCount };
+}
+
+module.exports = {
+  notifyUser,
+  notifyAdmins,
+  listMyNotifications,
+  markAsRead,
+  markAllAsRead,
+};

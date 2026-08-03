@@ -25,6 +25,7 @@ const {
   verifyRefreshToken,
   hashToken,
   generateRandomToken,
+  generateVerificationCode,
 } = require('./token.service');
 const { sendEmail } = require('./email.service');
 const { notifyAdmins } = require('./notification.service');
@@ -110,22 +111,20 @@ async function revokeAllSessions(userId, reason = 'manual') {
 }
 
 /**
- * Envoie l'e-mail de vérification + retourne le token (pour champ dev).
+ * Envoie un code OTP à 6 chiffres par e-mail + retourne le code (champ dev).
  */
 async function sendVerificationEmail(user) {
-  const token = generateRandomToken();
-  user.emailVerificationToken = hashToken(token);
-  user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const code = generateVerificationCode();
+  user.emailVerificationToken = hashToken(code);
+  user.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000);
   await user.save();
 
-  // Doit correspondre aux routes du site client (client/src/App.jsx)
-  const url = `${env.clientUrl}/verification-email?token=${token}`;
   await sendEmail({
     to: user.email,
-    subject: 'Confirmez votre adresse e-mail',
-    html: verifyEmailTemplate(url, user.firstName),
+    subject: `${code} — votre code de vérification L-ARTIS`,
+    html: verifyEmailTemplate(code, user.firstName),
   });
-  return token;
+  return code;
 }
 
 /* ------------------------------------------------------------------ */
@@ -146,15 +145,17 @@ async function register({ email, password, firstName, lastName, phone, role, art
     throw new ApiError(409, 'Un compte existe déjà avec ce numéro de téléphone');
   }
 
-  const normalizedEmail = email ? String(email).trim().toLowerCase() : undefined;
-  if (normalizedEmail && (await User.exists({ email: normalizedEmail }))) {
+  const normalizedEmail = email ? String(email).trim().toLowerCase() : '';
+  if (!normalizedEmail) {
+    throw new ApiError(400, "L'adresse e-mail est obligatoire");
+  }
+  if (await User.exists({ email: normalizedEmail })) {
     throw new ApiError(409, 'Un compte existe déjà avec cette adresse e-mail');
   }
 
-  // Le compte est actif dès l'inscription : le numéro étant l'identifiant, il
-  // n'y a plus de lien e-mail à cliquer pour activer. Pour les artisans, le
-  // véritable garde-fou reste la validation du profil par un administrateur,
-  // qui conditionne la publication de la fiche.
+  // Le compte est actif dès l'inscription (identifiant = téléphone). L'e-mail
+  // sert à la récupération de mot de passe et doit être confirmé. Pour les
+  // artisans, la publication de la fiche reste soumise à validation admin.
   const user = await User.create({
     email: normalizedEmail,
     password,
@@ -183,12 +184,10 @@ async function register({ email, password, firstName, lastName, phone, role, art
     await Client.create({ userId: user._id });
   }
 
-  // L'e-mail est facultatif : on ne demande sa confirmation que s'il est
-  // fourni, puisqu'il constitue alors la seule voie de récupération autonome.
-  const verificationToken = normalizedEmail ? await sendVerificationEmail(user) : null;
+  const verificationCode = await sendVerificationEmail(user);
 
   logger.info(`Nouvel utilisateur : ${user.phone} (${role})`);
-  return { user, verificationToken };
+  return { user, verificationCode };
 }
 
 /**
@@ -339,33 +338,66 @@ async function logout(refreshToken) {
 /* Vérification e-mail                                                 */
 /* ------------------------------------------------------------------ */
 
-async function verifyEmail(token) {
-  const user = await User.findOne({
-    emailVerificationToken: hashToken(token),
+/**
+ * Vérifie le code reçu par e-mail.
+ * `email` (recommandé) restreint la recherche et limite le brute-force.
+ */
+async function verifyEmail({ code, email }) {
+  const normalizedCode = String(code || '').replace(/\s/g, '');
+  if (!/^\d{6}$/.test(normalizedCode)) {
+    throw new ApiError(400, 'Le code doit contenir 6 chiffres');
+  }
+
+  const filters = {
+    emailVerificationToken: hashToken(normalizedCode),
     emailVerificationExpires: { $gt: new Date() },
-  });
+  };
+  if (email) {
+    filters.email = String(email).trim().toLowerCase();
+  }
+
+  const user = await User.findOne(filters).select('+emailVerificationToken +emailVerificationExpires');
   if (!user) {
-    throw new ApiError(400, 'Lien de vérification invalide ou expiré');
+    throw new ApiError(400, 'Code invalide ou expiré');
+  }
+
+  if (user.isEmailVerified) {
+    return user;
   }
 
   user.isEmailVerified = true;
   user.emailVerificationToken = undefined;
   user.emailVerificationExpires = undefined;
-  await user.save();
-
-  // Le compte passe actif après vérification
   if (user.accountStatus === ACCOUNT_STATUS.PENDING) {
     user.accountStatus = ACCOUNT_STATUS.ACTIVE;
-    await user.save();
   }
+  await user.save();
 
   await sendEmail({
     to: user.email,
-    subject: 'Bienvenue sur Artisans Marketplace',
+    subject: 'Bienvenue sur L-ARTIS',
     html: welcomeTemplate(user.firstName, user.role),
   });
 
   return user;
+}
+
+/**
+ * Renvoie un nouveau code de vérification.
+ * Anti-énumération : réponse OK même si le compte n'existe pas.
+ */
+async function resendVerificationEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  if (!normalized) {
+    throw new ApiError(400, "L'adresse e-mail est obligatoire");
+  }
+
+  const user = await User.findOne({ email: normalized }).select(
+    '+emailVerificationToken +emailVerificationExpires'
+  );
+  if (!user || user.isEmailVerified) return null;
+
+  return sendVerificationEmail(user);
 }
 
 /* ------------------------------------------------------------------ */
@@ -388,12 +420,12 @@ async function forgotPassword(identifier) {
   user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
   await user.save();
 
-  // Doit correspondre aux routes du site client (client/src/App.jsx)
-  const url = `${env.clientUrl}/reinitialiser-mot-de-passe?token=${token}`;
+  const webUrl = `${env.clientUrl}/reinitialiser-mot-de-passe?token=${token}`;
+  const appUrl = `${env.appDeepLinkBase}reinitialiser-mot-de-passe?token=${token}`;
   await sendEmail({
     to: user.email,
     subject: 'Réinitialisation de votre mot de passe',
-    html: resetPasswordTemplate(url, user.firstName),
+    html: resetPasswordTemplate(webUrl, user.firstName, appUrl),
   });
   return token;
 }
@@ -474,6 +506,7 @@ module.exports = {
   refresh,
   logout,
   verifyEmail,
+  resendVerificationEmail,
   forgotPassword,
   resetPassword,
   changePassword,

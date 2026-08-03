@@ -3,6 +3,7 @@
  */
 const mongoose = require('mongoose');
 const { NOTIFICATION_TYPES } = require('../constants');
+const paginatePlugin = require('./plugins/paginate.plugin');
 
 const notificationSchema = new mongoose.Schema(
   {
@@ -32,5 +33,7 @@ const notificationSchema = new mongoose.Schema(
 
 notificationSchema.index({ user: 1, readAt: 1, createdAt: -1 });
 notificationSchema.index({ isAdminOnly: 1, createdAt: -1 });
+
+paginatePlugin(notificationSchema);
 
 module.exports = mongoose.model('Notification', notificationSchema);

@@ -23,10 +23,12 @@ const authValidation = {
         if (!isValidPhone(value)) throw new Error('Numéro de téléphone invalide');
         return true;
       }),
-    // L'e-mail ne sert plus qu'à la récupération de mot de passe.
+    // E-mail obligatoire : vérification du compte + récupération de mot de passe.
     body('email')
-      .optional({ values: 'falsy' })
       .trim()
+      .notEmpty()
+      .withMessage("L'adresse e-mail est obligatoire")
+      .bail()
       .isEmail()
       .withMessage('Adresse e-mail invalide'),
     body('password')
@@ -104,10 +106,25 @@ const authValidation = {
   ],
 
   verifyEmail: [
-    body('token')
-      .isString()
-      .isLength({ min: 10, max: 200 })
-      .withMessage('Token de vérification invalide'),
+    body('code')
+      .trim()
+      .matches(/^\d{6}$/)
+      .withMessage('Le code doit contenir 6 chiffres'),
+    body('email')
+      .optional({ values: 'falsy' })
+      .trim()
+      .isEmail()
+      .withMessage('Adresse e-mail invalide'),
+  ],
+
+  resendVerification: [
+    body('email')
+      .trim()
+      .notEmpty()
+      .withMessage("L'adresse e-mail est obligatoire")
+      .bail()
+      .isEmail()
+      .withMessage('Adresse e-mail invalide'),
   ],
 
   forgotPassword: [

@@ -22,6 +22,12 @@ router.post('/login', authLimiter, validate(authValidation.login), authControlle
 router.post('/logout', authController.logout);
 router.post('/refresh', authLimiter, validate(authValidation.refresh), authController.refresh);
 router.post('/verify-email', authLimiter, validate(authValidation.verifyEmail), authController.verifyEmail);
+router.post(
+  '/resend-verification',
+  authLimiter,
+  validate(authValidation.resendVerification),
+  authController.resendVerification
+);
 router.post('/forgot-password', authLimiter, validate(authValidation.forgotPassword), authController.forgotPassword);
 router.post('/reset-password', authLimiter, validate(authValidation.resetPassword), authController.resetPassword);
 router.post('/change-password', protect, validate(authValidation.changePassword), authController.changePassword);

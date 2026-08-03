@@ -12,7 +12,7 @@ function layout(content) {
         <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;">
           <tr>
             <td style="background:#1d4ed8;padding:24px 32px;">
-              <h1 style="margin:0;color:#ffffff;font-size:22px;">Artisans Marketplace</h1>
+              <h1 style="margin:0;color:#ffffff;font-size:22px;">L-ARTIS</h1>
               <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px;">La plateforme des artisans du Bénin</p>
             </td>
           </tr>
@@ -23,7 +23,7 @@ function layout(content) {
           </tr>
           <tr>
             <td style="padding:16px 32px;background:#f9fafb;color:#6b7280;font-size:12px;">
-              Cet e-mail a été envoyé par Artisans Marketplace. Si vous n'êtes pas à l'origine
+              Cet e-mail a été envoyé par L-ARTIS. Si vous n'êtes pas à l'origine
               de cette action, ignorez simplement ce message.
             </td>
           </tr>
@@ -48,25 +48,26 @@ function button(url, label) {
 /**
  * Vérification d'adresse e-mail.
  */
-function verifyEmailTemplate(url, name) {
+function verifyEmailTemplate(code, name) {
   return layout(`
     <h2 style="margin:0 0 16px;color:#111827;">Confirmez votre adresse e-mail</h2>
     <p style="color:#374151;line-height:1.6;">Bonjour ${name},</p>
     <p style="color:#374151;line-height:1.6;">
-      Merci de vous être inscrit sur Artisans Marketplace. Pour activer votre compte,
-      veuillez confirmer votre adresse e-mail en cliquant sur le bouton ci-dessous.
+      Merci de vous être inscrit sur L-ARTIS. Saisissez le code ci-dessous
+      dans l'application ou sur le site pour vérifier votre adresse.
     </p>
-    <p style="color:#6b7280;font-size:13px;">Ce lien expire dans 24 heures.</p>
-    ${button(url, "Confirmer mon adresse e-mail")}
-    <p style="color:#9ca3af;font-size:13px;">Si le bouton ne fonctionne pas, copiez ce lien :
-      <br/>${url}</p>
+    <p style="margin:28px 0;text-align:center;">
+      <span style="display:inline-block;letter-spacing:8px;font-size:32px;font-weight:bold;color:#111827;background:#f3f4f6;padding:16px 24px;border-radius:12px;font-family:Consolas,Monaco,monospace;">${code}</span>
+    </p>
+    <p style="color:#6b7280;font-size:13px;text-align:center;">Ce code expire dans 15 minutes.</p>
+    <p style="color:#9ca3af;font-size:13px;">Si vous n'êtes pas à l'origine de cette inscription, ignorez cet e-mail.</p>
   `);
 }
 
 /**
  * Réinitialisation du mot de passe.
  */
-function resetPasswordTemplate(url, name) {
+function resetPasswordTemplate(url, name, appUrl) {
   return layout(`
     <h2 style="margin:0 0 16px;color:#111827;">Réinitialisation du mot de passe</h2>
     <p style="color:#374151;line-height:1.6;">Bonjour ${name},</p>
@@ -76,6 +77,7 @@ function resetPasswordTemplate(url, name) {
     </p>
     <p style="color:#6b7280;font-size:13px;">Ce lien expire dans 1 heure.</p>
     ${button(url, "Réinitialiser mon mot de passe")}
+    ${appUrl ? `<p style="color:#6b7280;font-size:13px;text-align:center;">Ou ouvrez dans l'application L-ARTIS :<br/><a href="${appUrl}" style="color:#1d4ed8;">${appUrl}</a></p>` : ''}
     <p style="color:#9ca3af;font-size:13px;">Si le bouton ne fonctionne pas, copiez ce lien :
       <br/>${url}</p>
   `);

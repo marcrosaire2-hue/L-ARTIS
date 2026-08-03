@@ -11,9 +11,8 @@ import * as SecureStore from 'expo-secure-store';
  * token, ce qui évite une dépendance de plus. Si d'autres préférences
  * apparaissent, `@react-native-async-storage/async-storage` sera plus adapté.
  */
-// v2 : l'introduction a changé (images de fond), on la rejoue une fois
-// pour tous les appareils qui avaient déjà vu la version précédente.
-const SEEN_KEY = 'artisans.introSeen.v2';
+// v3 : design type Monpermis (voile navy, CTA pilule, Passer).
+const SEEN_KEY = 'artisans.introSeen.v3';
 
 export async function hasSeenIntro() {
   try {

@@ -69,7 +69,9 @@ export function initials(value) {
 export function mediaUrl(path) {
   if (!path) return null;
   if (path.startsWith('http')) return path;
-  const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1').replace(/\/api\/v\d+$/, '');
+  const base = (
+    process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api/v1'
+  ).replace(/\/api\/v\d+$/, '');
   return `${base}${path}`;
 }
 

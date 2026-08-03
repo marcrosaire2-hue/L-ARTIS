@@ -66,7 +66,8 @@ export const artisansApi = api.injectEndpoints({
 
     /* --- Médias --- */
     uploadMedia: builder.mutation({
-      // FormData : ne pas fixer Content-Type, le navigateur ajoute la boundary
+      // FormData : ne pas fixer Content-Type (boundary). Sur mobile, passer
+      // { uri, name, type } ; sur web, un File / Blob suffit.
       query: (file) => {
         const form = new FormData();
         form.append('file', file);

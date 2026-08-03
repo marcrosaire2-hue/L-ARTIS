@@ -48,6 +48,27 @@ export const authApi = api.injectEndpoints({
       query: (identifier) => ({ url: '/auth/forgot-password', method: 'POST', body: { identifier } }),
       transformResponse: unwrapData,
     }),
+    resetPassword: builder.mutation({
+      query: (body) => ({ url: '/auth/reset-password', method: 'POST', body }),
+      transformResponse: unwrapData,
+    }),
+    verifyEmail: builder.mutation({
+      query: ({ code, email }) => ({
+        url: '/auth/verify-email',
+        method: 'POST',
+        body: { code, email },
+      }),
+      transformResponse: unwrapData,
+      invalidatesTags: ['Me'],
+    }),
+    resendVerification: builder.mutation({
+      query: (email) => ({
+        url: '/auth/resend-verification',
+        method: 'POST',
+        body: { email },
+      }),
+      transformResponse: unwrapData,
+    }),
     deleteAccount: builder.mutation({
       query: (password) => ({ url: '/auth/me', method: 'DELETE', body: { password } }),
       onQueryStarted: async (_arg, { queryFulfilled }) => {
@@ -69,6 +90,9 @@ export const {
   useRefreshMutation,
   useLogoutMutation,
   useForgotPasswordMutation,
+  useResetPasswordMutation,
+  useVerifyEmailMutation,
+  useResendVerificationMutation,
   useDeleteAccountMutation,
   useMeQuery,
 } = authApi;

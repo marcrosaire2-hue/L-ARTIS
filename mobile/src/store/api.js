@@ -76,6 +76,16 @@ export const unwrapData = (response) => response?.data ?? null;
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Me', 'Artisan', 'MyArtisan', 'Service', 'Gallery', 'Quote', 'Favorite', 'Review'],
+  tagTypes: [
+    'Me',
+    'Artisan',
+    'MyArtisan',
+    'Service',
+    'Gallery',
+    'Quote',
+    'Favorite',
+    'Review',
+    'Notification',
+  ],
   endpoints: () => ({}),
 });

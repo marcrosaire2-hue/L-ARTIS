@@ -49,11 +49,19 @@ function hashToken(token) {
 }
 
 /**
- * Token aléatoire (vérification d'e-mail, reset de mot de passe).
+ * Token aléatoire (reset de mot de passe, liens longs).
  * 32 octets -> 64 caractères hexadécimaux.
  */
 function generateRandomToken() {
   return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Code OTP à 6 chiffres pour la vérification d'e-mail.
+ * crypto.randomInt évite le biais modulo des Math.random.
+ */
+function generateVerificationCode() {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
 }
 
 module.exports = {
@@ -63,4 +71,5 @@ module.exports = {
   verifyRefreshToken,
   hashToken,
   generateRandomToken,
+  generateVerificationCode,
 };

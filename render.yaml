@@ -1,9 +1,13 @@
 # Blueprint Render — L-ARTIS
-# Dashboard : New → Blueprint → repo r3185644-alt/L-ARTIS
+# Dashboard : New → Blueprint → repo marcrosaire2-hue/L-ARTIS
+# URLs actuelles :
+#   API    https://lartis-api-sc17.onrender.com
+#   Client https://lartis-client-fx8k.onrender.com
+#   Admin  https://lartis-admin-jmii.onrender.com
 services:
   # --- API Node.js -----------------------------------------------------------
   - type: web
-    name: lartis-api
+    name: lartis-api-sc17
     runtime: node
     plan: free
     rootDir: server
@@ -18,9 +22,9 @@ services:
       - key: COOKIE_SECURE
         value: "true"
       - key: CLIENT_URL
-        value: https://lartis-client.onrender.com
+        value: https://lartis-client-fx8k.onrender.com
       - key: ADMIN_URL
-        value: https://lartis-admin.onrender.com
+        value: https://lartis-admin-jmii.onrender.com
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -46,13 +50,13 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: SMTP_FROM
-        value: "L-ARTIS <no-reply@lartis.onrender.com>"
+        value: "L-ARTIS <marcrosaire2@gmail.com>"
       - key: MAX_FILE_SIZE_MB
         value: "5"
 
   # --- Site client (SPA Vite) ------------------------------------------------
   - type: web
-    name: lartis-client
+    name: lartis-client-fx8k
     runtime: static
     rootDir: client
     buildCommand: npm ci && npm run build
@@ -63,11 +67,11 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://lartis-api.onrender.com/api/v1
+        value: https://lartis-api-sc17.onrender.com/api/v1
 
   # --- Panneau admin (SPA Vite) ----------------------------------------------
   - type: web
-    name: lartis-admin
+    name: lartis-admin-jmii
     runtime: static
     rootDir: admin
     buildCommand: npm ci && npm run build
@@ -78,4 +82,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://lartis-api.onrender.com/api/v1
+        value: https://lartis-api-sc17.onrender.com/api/v1

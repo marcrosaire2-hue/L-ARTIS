@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,13 +42,11 @@ const baseSchema = {
     .string()
     .trim()
     .refine(isBeninPhone, BENIN_PHONE_HINT),
-  // L'e-mail est facultatif et ne sert qu'à récupérer un mot de passe oublié.
   email: z
     .string()
     .trim()
-    .email('Adresse e-mail invalide')
-    .optional()
-    .or(z.literal('')),
+    .min(1, "L'adresse e-mail est obligatoire")
+    .email('Adresse e-mail invalide'),
   password: passwordRule,
 };
 
@@ -153,40 +151,29 @@ function TradePicker({ value, onToggle, error }) {
   );
 }
 
-function SuccessScreen({ email, devToken, role }) {
+function SuccessScreen({ email, devCode, role }) {
   return (
     <Card className="p-8 text-center">
       <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
       <h1 className="mt-4 text-2xl font-bold text-slate-900">Compte créé</h1>
-      {email ? (
-        <p className="mt-2 text-slate-600">
-          Votre compte est actif. Un lien de confirmation a été envoyé à <strong>{email}</strong> —
-          ouvrez-le pour pouvoir réinitialiser votre mot de passe en cas d'oubli.
-        </p>
-      ) : (
-        <p className="mt-2 text-slate-600">
-          Votre compte est actif. Connectez-vous désormais avec votre numéro de téléphone.
-        </p>
-      )}
+      <p className="mt-2 text-slate-600">
+        Un code à 6 chiffres a été envoyé à <strong>{email}</strong>. Saisissez-le pour
+        vérifier votre adresse.
+      </p>
       {role === 'artisan' && (
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800">
           Ensuite, complétez votre fiche (photo, présentation, prestations) : elle sera
           publiée après validation par notre équipe.
         </p>
       )}
-      {devToken && (
+      {devCode && (
         <p className="mt-4 text-sm text-slate-500">
-          Environnement de développement —{' '}
-          <Link
-            to={`/verification-email?token=${devToken}`}
-            className="font-medium text-brand-700 underline"
-          >
-            confirmer directement
-          </Link>
+          Environnement de développement — code :{' '}
+          <strong className="tracking-widest text-slate-800">{devCode}</strong>
         </p>
       )}
-      <Link to="/connexion" className="mt-6 inline-block">
-        <Button variant="secondary">Aller à la connexion</Button>
+      <Link to={`/verification-email?email=${encodeURIComponent(email)}`} className="mt-6 inline-block">
+        <Button>Saisir le code</Button>
       </Link>
     </Card>
   );
@@ -195,7 +182,6 @@ function SuccessScreen({ email, devToken, role }) {
 export default function RegisterPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const role = searchParams.get('role') === 'artisan' ? 'artisan' : 'client';
-  const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const [registerUser, { isLoading }] = useRegisterMutation();
@@ -250,7 +236,7 @@ export default function RegisterPage() {
       phone: values.phone,
       password: values.password,
       role,
-      ...(values.email ? { email: values.email } : {}),
+      email: values.email.trim().toLowerCase(),
       ...(role === 'artisan' && {
         artisanData: {
           businessName: values.businessName,
@@ -264,14 +250,15 @@ export default function RegisterPage() {
 
     try {
       const result = await registerUser(payload).unwrap();
-      setSuccess({ email: values.email, devToken: result?.dev?.verificationToken });
+      setSuccess({
+        email: values.email.trim().toLowerCase(),
+        devCode: result?.dev?.verificationCode,
+      });
 
-      // Connexion immédiate : le compte est utilisable avant vérification, ce
-      // qui permet d'enchaîner sur la complétion de la fiche sans friction.
+      // Connexion immédiate, puis saisie du code e-mail.
       try {
         const session = await login({ identifier: values.phone, password: values.password }).unwrap();
         dispatch(credentialsReceived(session));
-        if (role === 'artisan') navigate('/artisan', { replace: true });
       } catch {
         /* l'écran de confirmation reste affiché */
       }
@@ -322,9 +309,10 @@ export default function RegisterPage() {
                 </Field>
 
                 <Field
-                  label="Adresse e-mail (facultatif)"
+                  label="Adresse e-mail"
+                  required
                   error={errors.email?.message}
-                  hint="Sans e-mail, seul un administrateur pourra réinitialiser votre mot de passe en cas d'oubli."
+                  hint="Obligatoire pour vérifier votre compte et récupérer votre mot de passe."
                 >
                   <Input type="email" autoComplete="email" {...register('email')} />
                 </Field>

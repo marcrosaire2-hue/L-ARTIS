@@ -8,6 +8,9 @@ import '../features/auth/auth.api';
 import '../features/catalog/catalog.api';
 import '../features/artisans/artisans.api';
 import '../features/reviews/reviews.api';
+import '../features/favorites/favorites.api';
+import '../features/quotes/quotes.api';
+import '../features/notifications/notifications.api';
 
 export const store = configureStore({
   reducer: {

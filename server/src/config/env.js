@@ -31,6 +31,8 @@ const env = {
   // Aperçu web d'Expo pendant le développement. L'application native
   // n'envoie pas d'en-tête Origin et n'est pas concernée par CORS.
   mobileWebUrl: process.env.MOBILE_WEB_URL || '',
+  // Deep links app native (expo-router scheme). Ex. lartis://verification-email?token=
+  appDeepLinkBase: process.env.APP_DEEP_LINK_BASE || 'lartis://',
   mongoUri: process.env.MONGODB_URI,
   jwt: {
     secret: process.env.JWT_SECRET,

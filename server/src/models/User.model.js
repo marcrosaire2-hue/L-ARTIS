@@ -12,10 +12,9 @@ const { normalizePhone, isValidPhone } = require('../utils/phone');
 
 const userSchema = new mongoose.Schema(
   {
-    // L'identifiant de connexion est le téléphone (cf. `phone`). L'e-mail
-    // devient facultatif et ne sert plus qu'à la récupération de mot de passe.
-    // Son unicité est portée par un index PARTIEL défini plus bas : un index
-    // unique classique ferait collisionner tous les comptes sans e-mail.
+    // Identifiant de connexion = téléphone. L'e-mail est obligatoire à
+    // l'inscription (validation + récupération MDP). L'index PARTIEL conserve
+    // la compatibilité avec d'anciens comptes sans e-mail.
     email: {
       type: String,
       lowercase: true,
