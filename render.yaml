@@ -1,0 +1,81 @@
+# Blueprint Render — L-ARTIS
+# Dashboard : New → Blueprint → repo r3185644-alt/L-ARTIS
+services:
+  # --- API Node.js -----------------------------------------------------------
+  - type: web
+    name: lartis-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PREFIX
+        value: /api/v1
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: CLIENT_URL
+        value: https://lartis-client.onrender.com
+      - key: ADMIN_URL
+        value: https://lartis-admin.onrender.com
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: JWT_ISSUER
+        value: artisans-marketplace-api
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      - key: MONGODB_URI
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: "L-ARTIS <no-reply@lartis.onrender.com>"
+      - key: MAX_FILE_SIZE_MB
+        value: "5"
+
+  # --- Site client (SPA Vite) ------------------------------------------------
+  - type: web
+    name: lartis-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://lartis-api.onrender.com/api/v1
+
+  # --- Panneau admin (SPA Vite) ----------------------------------------------
+  - type: web
+    name: lartis-admin
+    runtime: static
+    rootDir: admin
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://lartis-api.onrender.com/api/v1

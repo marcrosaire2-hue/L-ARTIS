@@ -44,17 +44,26 @@ const MAX_ACTIVE_SESSIONS = 10;
 /* ------------------------------------------------------------------ */
 
 function cookieOptions() {
+  // En production (Render), client/admin et API sont sur des domaines
+  // distincts : SameSite=Lax bloquerait le cookie de refresh en XHR
+  // cross-site. None + Secure est requis pour que credentials: 'include'
+  // fonctionne entre *.onrender.com.
   return {
     httpOnly: true,
     secure: env.isProduction,
-    sameSite: 'lax',
+    sameSite: env.isProduction ? 'none' : 'lax',
     path: '/api/v1/auth',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
   };
 }
 
 function clearCookieOptions() {
-  return { httpOnly: true, secure: env.isProduction, sameSite: 'lax', path: '/api/v1/auth' };
+  return {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: env.isProduction ? 'none' : 'lax',
+    path: '/api/v1/auth',
+  };
 }
 
 /**

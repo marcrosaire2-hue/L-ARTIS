@@ -65,3 +65,39 @@ requêtes, donc `credentials: 'include'` + origine whitelistée).
 - Réponse standard : `{ success, statusCode, message, data, meta }`
 - Erreurs : `{ success: false, statusCode, message, details? }`
 - Auth : `Authorization: Bearer <access_token>` + refresh token en cookie `httpOnly`
+
+## Déploiement Render
+
+Le fichier [`render.yaml`](render.yaml) déclare trois services :
+
+| Service | URL |
+|---|---|
+| API | https://lartis-api.onrender.com |
+| Client | https://lartis-client.onrender.com |
+| Admin | https://lartis-admin.onrender.com |
+
+### Prérequis
+
+1. Compte [Render](https://dashboard.render.com) lié au GitHub `r3185644-alt`.
+2. MongoDB Atlas : dans **Network Access**, autoriser `0.0.0.0/0` (les dynos Render n’ont pas d’IP fixe sur le plan free).
+3. URI MongoDB, URL Cloudinary, et SMTP prêts (mêmes valeurs que `server/.env` en local).
+
+### Créer le Blueprint
+
+1. Dashboard Render → **New** → **Blueprint**.
+2. Connecter le dépôt [r3185644-alt/L-ARTIS](https://github.com/r3185644-alt/L-ARTIS) (branche `main`).
+3. Remplir les variables `sync: false` : `MONGODB_URI`, `CLOUDINARY_URL`, `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`.
+4. Lancer le déploiement.
+
+### Après le premier deploy
+
+Créer un administrateur via le **Shell** du service `lartis-api` (répertoire `server/`) :
+
+```bash
+node src/scripts/createAdmin.js <email> <motdepasse> <prénom> <nom> super
+```
+
+Vérifications :
+
+- Health : `GET https://lartis-api.onrender.com/api/v1/health`
+- Connexion sur le client et sur l’admin.
