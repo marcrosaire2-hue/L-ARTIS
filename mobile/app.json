@@ -17,6 +17,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.marc2.lartis",
+      "versionCode": 1,
       "intentFilters": [
         {
           "action": "VIEW",
