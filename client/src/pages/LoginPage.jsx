@@ -35,7 +35,8 @@ export default function LoginPage() {
   // qu'un navigate() posé dans le gestionnaire de soumission ne s'exécute —
   // deux destinations différentes et c'est la mauvaise qui gagne.
   const redirectTo =
-    location.state?.from?.pathname ?? (user?.role === 'artisan' ? '/artisan' : '/');
+    location.state?.from?.pathname ??
+    (user?.role === 'artisan' ? '/attente-validation' : '/');
 
   if (isAuthenticated) return <Navigate to={redirectTo} replace />;
 

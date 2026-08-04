@@ -110,14 +110,20 @@ const refresh = catchAsync(async (req, res) => {
 /* ------------------------------------------------------------------ */
 
 const verifyEmail = catchAsync(async (req, res) => {
-  const user = await authService.verifyEmail({
+  const { user, pendingArtisanValidation } = await authService.verifyEmail({
     code: req.body.code,
     email: req.body.email,
   });
   res.json(
-    ApiResponse.ok('Adresse e-mail vérifiée.', {
-      user: user.toPublicJSON(),
-    })
+    ApiResponse.ok(
+      pendingArtisanValidation
+        ? 'Adresse e-mail vérifiée. Votre profil artisan est en attente de validation.'
+        : 'Adresse e-mail vérifiée.',
+      {
+        user: user.toPublicJSON(),
+        pendingArtisanValidation: Boolean(pendingArtisanValidation),
+      }
+    )
   );
 });
 

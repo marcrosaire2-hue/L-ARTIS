@@ -95,8 +95,14 @@ export function errorMessage(error, fallback = 'Une erreur est survenue.') {
       .join(' · ');
   }
   if (payload?.message) return payload.message;
+  if (error.status === 'TIMEOUT_ERROR') {
+    return 'Le serveur met trop de temps à répondre. Réessayez dans un instant.';
+  }
   if (error.status === 'FETCH_ERROR') {
     return "Impossible de joindre le serveur. Vérifiez votre connexion.";
+  }
+  if (typeof error.error === 'string' && /timeout/i.test(error.error)) {
+    return 'Le serveur met trop de temps à répondre. Réessayez dans un instant.';
   }
   return fallback;
 }

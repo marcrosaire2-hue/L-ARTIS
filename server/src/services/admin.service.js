@@ -11,7 +11,7 @@ const { notifyUser, notifyAdmins } = require('./notification.service');
 /** Neutralise les métacaractères d'une saisie utilisateur avant $regex. */
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const { sendEmail } = require('./email.service');
-const { artisanStatusTemplate } = require('../helpers/email/templates');
+const { artisanStatusTemplate, welcomeTemplate } = require('../helpers/email/templates');
 const { revokeAllSessions } = require('./auth.service');
 const { purgeUserData } = require('./account.service');
 
@@ -81,11 +81,20 @@ async function setArtisanStatus(artisanId, adminId, { status, reason = '' }) {
     { artisanId: artisan.artisanId }
   );
 
-  await sendEmail({
-    to: artisan.userId.email,
-    subject: title,
-    html: artisanStatusTemplate(artisan.userId.firstName, status, reason),
-  });
+  // Bienvenue uniquement à la validation ; refus / suspension gardent le mail de statut.
+  if (status === ARTISAN_STATUS.VALIDATED) {
+    await sendEmail({
+      to: artisan.userId.email,
+      subject: 'Bienvenue sur L-ARTIS',
+      html: welcomeTemplate(artisan.userId.firstName, 'artisan'),
+    });
+  } else {
+    await sendEmail({
+      to: artisan.userId.email,
+      subject: title,
+      html: artisanStatusTemplate(artisan.userId.firstName, status, reason),
+    });
+  }
 
   return artisan;
 }

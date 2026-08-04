@@ -21,7 +21,7 @@ export default function VerifyEmailPage() {
   const [code, setCode] = useState(searchParams.get('code') || '');
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(null);
 
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
   const [resend, { isLoading: resending }] = useResendVerificationMutation();
@@ -40,7 +40,10 @@ export default function VerifyEmailPage() {
         email: email.trim().toLowerCase(),
       }).unwrap();
       if (result?.user) dispatch(userUpdated(result.user));
-      setDone(true);
+      const pending =
+        result?.pendingArtisanValidation === true ||
+        (result?.user?.role || sessionUser?.role) === 'artisan';
+      setDone(pending ? 'pending' : 'ok');
     } catch (verifyError) {
       setError(errorMessage(verifyError, 'Code invalide ou expiré.'));
     }
@@ -57,6 +60,24 @@ export default function VerifyEmailPage() {
       setError(errorMessage(resendError, "Impossible d'envoyer un nouveau code."));
     }
   };
+
+  if (done === 'pending') {
+    return (
+      <Container className="py-16">
+        <Card className="mx-auto max-w-md p-8 text-center">
+          <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
+          <h1 className="mt-4 text-2xl font-bold text-slate-900">Merci de patienter</h1>
+          <p className="mt-2 text-slate-600">
+            Votre e-mail est confirmé. Notre équipe va valider votre profil artisan. Vous
+            recevrez ensuite un e-mail de bienvenue.
+          </p>
+          <Button className="mt-6" onClick={() => navigate('/attente-validation', { replace: true })}>
+            Voir l&apos;état de validation
+          </Button>
+        </Card>
+      </Container>
+    );
+  }
 
   if (done) {
     return (

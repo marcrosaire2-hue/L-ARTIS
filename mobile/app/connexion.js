@@ -28,7 +28,9 @@ export default function LoginScreen() {
     try {
       const session = await login({ identifier: identifier.trim(), password }).unwrap();
       dispatch(credentialsReceived(session));
-      router.replace('/accueil');
+      router.replace(
+        session?.user?.role === 'artisan' ? '/attente-validation' : '/accueil'
+      );
     } catch (loginError) {
       setError(errorMessage(loginError, 'Connexion impossible.'));
     }

@@ -43,7 +43,10 @@ export default function VerifyEmailScreen() {
     try {
       const result = await verifyEmail({ code: digits, email }).unwrap();
       if (result?.user) dispatch(userUpdated(result.user));
-      setDone(true);
+      const pending =
+        result?.pendingArtisanValidation === true ||
+        (result?.user?.role || sessionUser?.role) === 'artisan';
+      setDone(pending ? 'pending' : 'ok');
     } catch (verifyError) {
       setError(errorMessage(verifyError, 'Code invalide ou expiré.'));
     }
@@ -60,6 +63,22 @@ export default function VerifyEmailScreen() {
       setError(errorMessage(resendError, "Impossible d'envoyer un nouveau code."));
     }
   };
+
+  if (done === 'pending') {
+    return (
+      <AuthShell
+        heroSource={require('../assets/artisan.jpg')}
+        kicker="Inscription"
+        title="Merci de patienter"
+        subtitle="Votre e-mail est confirmé. Notre équipe va valider votre profil artisan. Vous recevrez ensuite un e-mail de bienvenue."
+      >
+        <Button
+          label="Voir l'état de validation"
+          onPress={() => router.replace('/attente-validation')}
+        />
+      </AuthShell>
+    );
+  }
 
   if (done) {
     return (
@@ -116,7 +135,14 @@ export default function VerifyEmailScreen() {
         <Text style={styles.link}>{resending ? 'Envoi…' : 'Renvoyer le code'}</Text>
       </Pressable>
 
-      <Pressable onPress={() => router.replace('/accueil')} style={styles.linkWrap}>
+      <Pressable
+        onPress={() =>
+          router.replace(
+            sessionUser?.role === 'artisan' ? '/attente-validation' : '/accueil'
+          )
+        }
+        style={styles.linkWrap}
+      >
         <Text style={styles.skip}>Plus tard</Text>
       </Pressable>
     </AuthShell>

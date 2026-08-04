@@ -33,8 +33,10 @@ export default function TermsScreen() {
           pathname: '/verification-email',
           params: { email: user.email },
         });
+      } else if (user?.role === 'artisan') {
+        router.replace('/attente-validation');
       } else {
-        router.replace(user?.role === 'artisan' ? '/espace-artisan' : '/accueil');
+        router.replace('/accueil');
       }
     } catch {
       /* error shown below */

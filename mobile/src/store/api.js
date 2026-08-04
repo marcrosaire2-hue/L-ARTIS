@@ -18,6 +18,8 @@ function resolveBaseUrl() {
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: resolveBaseUrl(),
+  // Render peut mettre ~1 min à sortir du sommeil : laisser assez de marge.
+  timeout: 90_000,
   prepareHeaders: (headers, { getState }) => {
     // Indique au serveur de remettre le refresh token dans le corps de la
     // réponse : une application native n'a pas de cookie pour le recevoir.

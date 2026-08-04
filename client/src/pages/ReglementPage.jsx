@@ -42,10 +42,18 @@ export default function ReglementPage() {
       const result = await acceptTerms().unwrap();
       if (result?.user) dispatch(userUpdated(result.user));
       setAccepted(true);
-      const verifyUrl = emailHint
-        ? `/verification-email?email=${encodeURIComponent(emailHint)}`
-        : '/compte';
-      setTimeout(() => navigate(verifyUrl, { replace: true }), 1200);
+      const emailVerified = result?.user?.isEmailVerified ?? user?.isEmailVerified;
+      const role = result?.user?.role ?? user?.role;
+      const email = emailHint || result?.user?.email || user?.email || '';
+      let next = '/compte';
+      if (!emailVerified) {
+        next = email
+          ? `/verification-email?email=${encodeURIComponent(email)}`
+          : '/verification-email';
+      } else if (role === 'artisan') {
+        next = '/attente-validation';
+      }
+      setTimeout(() => navigate(next, { replace: true }), 1200);
     } catch (acceptError) {
       setError(errorMessage(acceptError, "L'acceptation a échoué."));
     }

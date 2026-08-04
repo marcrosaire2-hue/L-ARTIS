@@ -17,6 +17,7 @@ import ArtisanPage from './pages/ArtisanPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import PendingValidationPage from './pages/PendingValidationPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AccountPage from './pages/AccountPage';
@@ -95,6 +96,14 @@ export default function App() {
         <Route path="connexion" element={<LoginPage />} />
         <Route path="inscription" element={<RegisterPage />} />
         <Route path="verification-email" element={<VerifyEmailPage />} />
+        <Route
+          path="attente-validation"
+          element={
+            <RequireAuth role="artisan">
+              <PendingValidationPage />
+            </RequireAuth>
+          }
+        />
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
 

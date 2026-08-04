@@ -15,6 +15,7 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl,
   // Le refresh token voyage dans un cookie httpOnly
   credentials: 'include',
+  timeout: 90_000,
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.accessToken;
     if (token) headers.set('authorization', `Bearer ${token}`);
