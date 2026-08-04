@@ -6,6 +6,11 @@
 export function mediaUrl(path) {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  const base = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1').replace(/\/api\/v\d+$/, '');
+  const api =
+    (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1').replace(
+      'https://lartis-api.onrender.com',
+      'https://lartis-api-sc17.onrender.com'
+    );
+  const base = api.replace(/\/api\/v\d+$/, '');
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }

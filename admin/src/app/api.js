@@ -1,7 +1,15 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { credentialsReceived, sessionEnded } from '../features/auth/authSlice';
 
-const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+// Ancien hostname Render encore présent dans certains builds ; bascule vers sc17.
+const resolveApiUrl = (url) => {
+  const value = url || 'http://localhost:5000/api/v1';
+  return value.replace(
+    'https://lartis-api.onrender.com',
+    'https://lartis-api-sc17.onrender.com'
+  );
+};
+const baseUrl = resolveApiUrl(import.meta.env.VITE_API_URL);
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl,

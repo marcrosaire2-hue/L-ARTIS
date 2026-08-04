@@ -34,15 +34,35 @@ app.use(
   })
 );
 
-// --- CORS : autorise uniquement les origines des deux frontends ---
-const allowedOrigins = [env.clientUrl, env.adminUrl, env.mobileWebUrl].filter(Boolean);
+// --- CORS : origines des frontends (env + URLs prod connues) ---
+// Les origines codées en dur évitent un 500 navigateur si ADMIN_URL /
+// CLIENT_URL sont absents ou obsolètes sur Render.
+const normalizeOrigin = (url) => (url || '').trim().replace(/\/$/, '');
+const allowedOrigins = [
+  ...new Set(
+    [
+      env.clientUrl,
+      env.adminUrl,
+      env.mobileWebUrl,
+      'https://lartis-client-fx8k.onrender.com',
+      'https://lartis-admin-jmii.onrender.com',
+      'http://localhost:5173',
+      'http://localhost:5174',
+    ]
+      .map(normalizeOrigin)
+      .filter(Boolean)
+  ),
+];
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
         return callback(null, true);
       }
-      return callback(new Error('Origine non autorisée par CORS'));
+      // Ne pas throw : sinon le navigateur voit un 500 sans
+      // Access-Control-Allow-Origin (message CORS trompeur).
+      logger.warn(`CORS refusé pour origine : ${origin}`);
+      return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
