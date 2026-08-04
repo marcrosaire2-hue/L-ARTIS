@@ -38,3 +38,7 @@ web-build/
 
 # Divers
 .claude/
+
+# APK locaux
+L-ARTIS-android.apk
+*.apk
