@@ -1,13 +1,15 @@
 /**
  * Point d'entrée du serveur.
  * 1. Connexion à MongoDB
- * 2. Démarrage HTTP (ou HTTPS en production derrière un proxy)
+ * 2. Démarrage HTTP + Socket.IO
  * 3. Arrêt propre sur SIGINT/SIGTERM
  */
+const http = require('http');
 const app = require('./app');
 const env = require('./config/env');
 const logger = require('./config/logger');
 const { connectDatabase, disconnectDatabase } = require('./config/database');
+const { initRealtime } = require('./services/realtime.service');
 
 let server;
 
@@ -15,11 +17,13 @@ async function startServer() {
   try {
     await connectDatabase();
 
-    server = app.listen(env.port, () => {
+    server = http.createServer(app);
+    initRealtime(server);
+
+    server.listen(env.port, () => {
       logger.info(`API démarrée : http://localhost:${env.port}${env.apiPrefix}`);
     });
 
-    // Durcissement derrière un reverse proxy (Nginx) en production
     app.set('trust proxy', env.isProduction ? 1 : 0);
   } catch (error) {
     logger.error('Démarrage impossible :', error.message);
@@ -35,7 +39,6 @@ async function shutdown(signal) {
       logger.info('Serveur arrêté');
       process.exit(0);
     });
-    // Garde-fou : forcer la sortie après 10 s
     setTimeout(() => process.exit(1), 10000).unref();
   } else {
     process.exit(0);

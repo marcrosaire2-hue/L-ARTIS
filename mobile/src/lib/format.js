@@ -19,6 +19,16 @@ export const PRICE_UNITS = {
   projet: 'par projet',
 };
 
+export const REPORT_REASONS = {
+  profil_frauduleux: 'Profil frauduleux',
+  fausses_informations: 'Fausses informations',
+  comportement_inapproprie: 'Comportement inapproprié',
+  arnaque: 'Arnaque',
+  spam: 'Spam',
+  contenu_illicite: 'Contenu illicite',
+  autre: 'Autre',
+};
+
 export function formatPrice(value) {
   if (value == null || Number.isNaN(Number(value))) return '—';
   return priceFormatter.format(Number(value));

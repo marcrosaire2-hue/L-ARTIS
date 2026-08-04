@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -152,6 +152,8 @@ function TradePicker({ value, onToggle, error }) {
 }
 
 function SuccessScreen({ email, devCode, role }) {
+  const navigate = useNavigate();
+
   return (
     <Card className="p-8 text-center">
       <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
@@ -172,9 +174,17 @@ function SuccessScreen({ email, devCode, role }) {
           <strong className="tracking-widest text-slate-800">{devCode}</strong>
         </p>
       )}
-      <Link to={`/verification-email?email=${encodeURIComponent(email)}`} className="mt-6 inline-block">
-        <Button>Saisir le code</Button>
-      </Link>
+      <Button
+        className="mt-6"
+        onClick={() =>
+          navigate(
+            `/reglement/${role}?accept=1&email=${encodeURIComponent(email)}`,
+            { replace: true }
+          )
+        }
+      >
+        Continuer
+      </Button>
     </Card>
   );
 }
@@ -183,6 +193,7 @@ export default function RegisterPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const role = searchParams.get('role') === 'artisan' ? 'artisan' : 'client';
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [registerUser, { isLoading }] = useRegisterMutation();
   const [login] = useLoginMutation();
@@ -255,10 +266,14 @@ export default function RegisterPage() {
         devCode: result?.dev?.verificationCode,
       });
 
-      // Connexion immédiate, puis saisie du code e-mail.
+      // Connexion immédiate, puis acceptation du règlement.
       try {
         const session = await login({ identifier: values.phone, password: values.password }).unwrap();
         dispatch(credentialsReceived(session));
+        navigate(
+          `/reglement/${role}?accept=1&email=${encodeURIComponent(values.email.trim().toLowerCase())}`,
+          { replace: true }
+        );
       } catch {
         /* l'écran de confirmation reste affiché */
       }

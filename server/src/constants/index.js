@@ -75,6 +75,8 @@ const PAGINATION = Object.freeze({
   MAX_LIMIT: 50,
 });
 
+const TERMS_VERSION = '2026-08-01';
+
 module.exports = {
   ROLES,
   ACCOUNT_STATUS,
@@ -87,4 +89,5 @@ module.exports = {
   MIME_TYPES,
   REGEX,
   PAGINATION,
+  TERMS_VERSION,
 };

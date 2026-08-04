@@ -34,7 +34,7 @@ const {
   resetPasswordTemplate,
   welcomeTemplate,
 } = require('../helpers/email/templates');
-const { ROLES, ACCOUNT_STATUS } = require('../constants');
+const { ROLES, ACCOUNT_STATUS, TERMS_VERSION } = require('../constants');
 const { normalizePhone, looksLikeEmail } = require('../utils/phone');
 
 const REFRESH_COOKIE = 'refresh_token';
@@ -500,6 +500,18 @@ async function findUserByEmail(email) {
   return User.findOne({ email });
 }
 
+async function acceptTerms(userId) {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(404, 'Utilisateur introuvable');
+  if (user.role === ROLES.ADMIN) {
+    throw new ApiError(400, 'Non applicable aux administrateurs');
+  }
+  user.termsAcceptedAt = new Date();
+  user.termsVersion = TERMS_VERSION;
+  await user.save();
+  return user;
+}
+
 module.exports = {
   register,
   login,
@@ -511,6 +523,7 @@ module.exports = {
   resetPassword,
   changePassword,
   getMe,
+  acceptTerms,
   createSession,
   revokeAllSessions,
   sendVerificationEmail,

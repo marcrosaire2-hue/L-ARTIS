@@ -65,4 +65,21 @@ const requireAdmin = catchAsync(async (req, res, next) => {
   next();
 });
 
-module.exports = { protect, authorize, requireAdmin };
+/**
+ * requirePermission('reports') — permissions fines du profil Admin.
+ * Les super-admins passent toujours.
+ */
+const requirePermission = (...keys) =>
+  catchAsync(async (req, res, next) => {
+    if (!req.admin) {
+      throw new ApiError(403, 'Accès réservé aux administrateurs');
+    }
+    if (req.admin.roleAdmin === 'super') return next();
+    const allowed = keys.some((key) => req.admin.permissions?.[key] === true);
+    if (!allowed) {
+      throw new ApiError(403, 'Permission insuffisante pour cette action');
+    }
+    next();
+  });
+
+module.exports = { protect, authorize, requireAdmin, requirePermission };

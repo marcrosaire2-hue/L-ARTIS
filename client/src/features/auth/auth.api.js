@@ -50,6 +50,15 @@ export const authApi = api.injectEndpoints({
     deleteAccount: builder.mutation({
       query: (password) => ({ url: '/auth/me', method: 'DELETE', body: { password } }),
     }),
+    changePassword: builder.mutation({
+      query: (body) => ({ url: '/auth/change-password', method: 'POST', body }),
+      transformResponse: unwrapData,
+    }),
+    acceptTerms: builder.mutation({
+      query: () => ({ url: '/auth/accept-terms', method: 'POST' }),
+      transformResponse: unwrapData,
+      invalidatesTags: ['Me'],
+    }),
     me: builder.query({
       query: () => '/auth/me',
       transformResponse: unwrapData,
@@ -69,4 +78,6 @@ export const {
   useResetPasswordMutation,
   useMeQuery,
   useDeleteAccountMutation,
+  useChangePasswordMutation,
+  useAcceptTermsMutation,
 } = authApi;

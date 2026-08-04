@@ -118,8 +118,8 @@ export default function RegisterScreen() {
         /* on continue vers la saisie du code même sans session */
       }
       router.replace({
-        pathname: '/verification-email',
-        params: { email: email.trim().toLowerCase() },
+        pathname: '/reglement',
+        params: { accept: '1', audience: role },
       });
     } catch (registerError) {
       setError(errorMessage(registerError, "L'inscription a échoué."));

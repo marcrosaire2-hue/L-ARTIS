@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Image,
   Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,11 +17,15 @@ import {
   Badge,
   Button,
   EmptyState,
+  Field,
   LoadingView,
   Rating,
   ScreenHeader,
+  SelectField,
   TextField,
 } from '../../src/components/ui';
+import { useOpenConversationMutation } from '../../src/features/conversations/conversations.api';
+import { useCreateReportMutation } from '../../src/features/reports/reports.api';
 import { CatalogVisual } from '../../src/components/CatalogVisual';
 import { useGetArtisanQuery } from '../../src/features/artisans/artisans.api';
 import {
@@ -32,6 +37,7 @@ import { useCreateReviewMutation } from '../../src/features/reviews/reviews.api'
 import { selectUser } from '../../src/features/auth/authSlice';
 import {
   PRICE_UNITS,
+  REPORT_REASONS,
   errorMessage,
   formatPhone,
   formatPrice,
@@ -46,6 +52,15 @@ function ContactActions({ artisan }) {
   const user = useSelector(selectUser);
   const phone = artisan.contactPhone;
   const whatsapp = (artisan.socialLinks?.whatsapp || phone || '').replace(/\D/g, '');
+
+  const [openConversation, { isLoading: openingChat }] = useOpenConversationMutation();
+  const [createReport, { isLoading: reporting }] = useCreateReportMutation();
+
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('autre');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportError, setReportError] = useState(null);
+  const [reportSent, setReportSent] = useState(false);
 
   const { data: favorites } = useListFavoritesQuery(
     { limit: 100 },
@@ -72,7 +87,40 @@ function ContactActions({ artisan }) {
     }
   };
 
+  const onMessage = async () => {
+    if (!user) return router.push('/connexion');
+    if (!user.termsAcceptedAt) {
+      return router.push({
+        pathname: '/reglement',
+        params: { accept: '1', audience: user.role === 'artisan' ? 'artisan' : 'client' },
+      });
+    }
+    try {
+      const conversation = await openConversation({ artisanId: artisan._id }).unwrap();
+      router.push(`/messages/${conversation._id}`);
+    } catch (err) {
+      /* silencieux — l'utilisateur peut réessayer */
+    }
+  };
+
+  const submitReport = async () => {
+    setReportError(null);
+    try {
+      await createReport({
+        targetType: 'artisan',
+        targetId: artisan._id,
+        reason: reportReason,
+        description: reportDescription.trim(),
+      }).unwrap();
+      setReportSent(true);
+      setReportOpen(false);
+    } catch (err) {
+      setReportError(errorMessage(err, 'Le signalement a échoué.'));
+    }
+  };
+
   return (
+    <>
     <View style={styles.card}>
       <Text style={styles.cardTitle}>Contacter cet artisan</Text>
       {phone ? (
@@ -97,6 +145,13 @@ function ContactActions({ artisan }) {
       {user?.role !== 'artisan' ? (
         <>
           <Button
+            label="Envoyer un message"
+            variant="secondary"
+            loading={openingChat}
+            onPress={onMessage}
+            style={{ marginTop: spacing.sm }}
+          />
+          <Button
             label="Demander un devis"
             variant="secondary"
             onPress={() => {
@@ -118,6 +173,24 @@ function ContactActions({ artisan }) {
         </>
       ) : null}
 
+      {user ? (
+        <Button
+          label="Signaler cette fiche"
+          variant="secondary"
+          onPress={() => {
+            if (!user) return router.push('/connexion');
+            setReportSent(false);
+            setReportError(null);
+            setReportOpen(true);
+          }}
+          style={{ marginTop: spacing.sm }}
+        />
+      ) : null}
+
+      {reportSent ? (
+        <AlertBox tone="green">Signalement enregistré. Merci pour votre vigilance.</AlertBox>
+      ) : null}
+
       {artisan.pricing?.fromPrice > 0 ? (
         <Text style={[typography.small, { marginTop: spacing.md }]}>
           Tarifs à partir de{' '}
@@ -129,6 +202,38 @@ function ContactActions({ artisan }) {
         </Text>
       ) : null}
     </View>
+
+    <Modal visible={reportOpen} animationType="slide" transparent onRequestClose={() => setReportOpen(false)}>
+      <View style={styles.modalBackdrop}>
+        <View style={styles.modalCard}>
+          <Text style={styles.cardTitle}>Signaler cette fiche</Text>
+          <SelectField
+            label="Motif"
+            value={reportReason}
+            onChange={setReportReason}
+            options={Object.entries(REPORT_REASONS).map(([value, label]) => ({ value, label }))}
+          />
+          <Field label="Précisions (facultatif)">
+            <TextField
+              value={reportDescription}
+              onChangeText={setReportDescription}
+              multiline
+              maxLength={2000}
+              placeholder="Décrivez le problème…"
+            />
+          </Field>
+          {reportError ? <AlertBox>{reportError}</AlertBox> : null}
+          <Button label="Envoyer le signalement" loading={reporting} onPress={submitReport} />
+          <Button
+            label="Annuler"
+            variant="secondary"
+            onPress={() => setReportOpen(false)}
+            style={{ marginTop: spacing.sm }}
+          />
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -465,4 +570,17 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   reviewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    maxHeight: '85%',
+  },
 });

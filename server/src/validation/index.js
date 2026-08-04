@@ -102,6 +102,8 @@ const artisanValidation = {
       return true;
     }),
     body('contactEmail').optional({ values: 'falsy' }).isEmail().withMessage('E-mail de contact invalide'),
+    body('legal.rccm').optional().isString().isLength({ max: 60 }),
+    body('legal.ifu').optional().isString().isLength({ max: 40 }),
   ],
   serviceCreate: [
     body('title').trim().isLength({ min: 3, max: 100 }),

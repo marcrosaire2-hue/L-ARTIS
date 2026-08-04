@@ -5,12 +5,22 @@
 const { Notification, User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { PAGINATION } = require('../constants');
+const { emitToUser } = require('./realtime.service');
 
 /**
  * Notifie un utilisateur précis.
  */
 async function notifyUser(userId, type, title, message = '', data = {}) {
-  return Notification.create({ user: userId, type, title, message, data });
+  const doc = await Notification.create({ user: userId, type, title, message, data });
+  emitToUser(userId, 'notification:new', {
+    id: String(doc._id),
+    type,
+    title,
+    message,
+    data,
+    createdAt: doc.createdAt,
+  });
+  return doc;
 }
 
 /**

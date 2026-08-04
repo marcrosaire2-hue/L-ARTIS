@@ -3,6 +3,7 @@
  * Statuts : sent -> delivered -> read (mis à jour côté API/Socket.IO).
  */
 const mongoose = require('mongoose');
+const paginatePlugin = require('./plugins/paginate.plugin');
 const { MESSAGE_STATUS } = require('../constants');
 
 const messageSchema = new mongoose.Schema(
@@ -51,5 +52,7 @@ const messageSchema = new mongoose.Schema(
 // Pagination optimisée d'un fil : conversation + date
 messageSchema.index({ conversation: 1, createdAt: -1 });
 messageSchema.index({ sender: 1, status: 1 });
+
+paginatePlugin(messageSchema);
 
 module.exports = mongoose.model('Message', messageSchema);

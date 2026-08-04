@@ -187,6 +187,11 @@ const getMe = catchAsync(async (req, res) => {
   res.json(ApiResponse.ok('Profil récupéré', data));
 });
 
+const acceptTerms = catchAsync(async (req, res) => {
+  const user = await authService.acceptTerms(req.user._id);
+  res.json(ApiResponse.ok('Règlement accepté.', { user: user.toPublicJSON() }));
+});
+
 module.exports = {
   register,
   login,
@@ -199,4 +204,5 @@ module.exports = {
   changePassword,
   getMe,
   deleteMe,
+  acceptTerms,
 };

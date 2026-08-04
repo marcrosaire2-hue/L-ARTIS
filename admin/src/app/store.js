@@ -8,6 +8,7 @@ import '../features/auth/auth.api';
 import '../features/artisans/artisans.api';
 import '../features/users/users.api';
 import '../features/reviews/reviews.api';
+import '../features/reports/reports.api';
 import '../features/catalog/catalog.api';
 import '../features/admins/admins.api';
 import '../features/activities/activities.api';
