@@ -22,6 +22,7 @@ const Subscription = require('./Subscription.model');
 const Favorite = require('./Favorite.model');
 const Media = require('./Media.model');
 const Session = require('./Session.model');
+const AdminActivity = require('./AdminActivity.model');
 
 module.exports = {
   User,
@@ -43,4 +44,5 @@ module.exports = {
   Favorite,
   Media,
   Session,
+  AdminActivity,
 };

@@ -173,16 +173,148 @@ async function setUserStatus(userId, { status, reason = '' }) {
 }
 
 /**
+ * Permissions par défaut selon le niveau admin (aligné sur createAdmin.js).
+ */
+function permissionsFor(roleAdmin) {
+  if (roleAdmin === 'moderator') {
+    return {
+      users: false,
+      artisans: false,
+      categories: false,
+      reviews: true,
+      reports: true,
+      quotes: false,
+      statistics: false,
+      settings: false,
+    };
+  }
+  if (roleAdmin === 'manager') {
+    return {
+      users: true,
+      artisans: true,
+      categories: true,
+      reviews: true,
+      reports: true,
+      quotes: false,
+      statistics: false,
+      settings: false,
+    };
+  }
+  return {
+    users: true,
+    artisans: true,
+    categories: true,
+    reviews: true,
+    reports: true,
+    quotes: true,
+    statistics: true,
+    settings: true,
+  };
+}
+
+/**
+ * Liste des profils administrateurs (User + rôle admin).
+ */
+async function listAdmins() {
+  const admins = await Admin.find()
+    .sort({ createdAt: -1 })
+    .populate('userId', 'firstName lastName email accountStatus isEmailVerified createdAt lastLoginAt');
+
+  return admins
+    .filter((admin) => admin.userId)
+    .map((admin) => {
+      const userDoc = admin.userId;
+      const user = userDoc.toPublicJSON
+        ? { ...userDoc.toPublicJSON(), lastLoginAt: userDoc.lastLoginAt }
+        : {
+            id: userDoc._id,
+            email: userDoc.email,
+            firstName: userDoc.firstName,
+            lastName: userDoc.lastName,
+            fullName: `${userDoc.firstName} ${userDoc.lastName}`,
+            accountStatus: userDoc.accountStatus,
+            isEmailVerified: userDoc.isEmailVerified,
+            createdAt: userDoc.createdAt,
+            lastLoginAt: userDoc.lastLoginAt,
+          };
+
+      return {
+        id: admin._id,
+        roleAdmin: admin.roleAdmin,
+        permissions: admin.permissions,
+        isActive: admin.isActive,
+        createdAt: admin.createdAt,
+        user,
+      };
+    });
+}
+
+/**
+ * Crée un compte administrateur (réservé aux super-admins).
+ */
+async function createAdmin(actorAdmin, { email, password, firstName, lastName, roleAdmin = 'manager' }) {
+  if (!actorAdmin || actorAdmin.roleAdmin !== 'super') {
+    throw new ApiError(403, 'Seul un super-administrateur peut créer un administrateur');
+  }
+
+  if (!['super', 'manager', 'moderator'].includes(roleAdmin)) {
+    throw new ApiError(422, 'Niveau admin invalide (super | manager | moderator)');
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const existing = await User.findOne({ email: normalizedEmail });
+  if (existing) {
+    throw new ApiError(409, 'Un compte existe déjà avec cette adresse e-mail');
+  }
+
+  const user = await User.create({
+    email: normalizedEmail,
+    password,
+    role: ROLES_ADMIN,
+    firstName: String(firstName).trim(),
+    lastName: String(lastName).trim(),
+    isEmailVerified: true,
+    accountStatus: ACCOUNT_STATUS.ACTIVE,
+  });
+
+  const admin = await Admin.create({
+    userId: user._id,
+    roleAdmin,
+    permissions: permissionsFor(roleAdmin),
+  });
+
+  return {
+    id: admin._id,
+    roleAdmin: admin.roleAdmin,
+    permissions: admin.permissions,
+    isActive: admin.isActive,
+    createdAt: admin.createdAt,
+    user: user.toPublicJSON(),
+  };
+}
+
+/**
  * Suppression définitive d'un utilisateur + profils associés.
  */
 async function deleteUserPermanently(userId) {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, 'Utilisateur introuvable');
 
+  const snapshot = {
+    id: user._id,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    fullName: `${user.firstName} ${user.lastName}`,
+  };
+
   // Même nettoyage que la suppression par l'utilisateur : sans cela, avis,
   // prestations et galeries survivaient au profil et restaient affichés.
   await purgeUserData(userId, user.role);
   await Admin.deleteMany({ userId });
+  return snapshot;
 }
 
 /**
@@ -296,6 +428,8 @@ module.exports = {
   setArtisanStatus,
   listUsers,
   setUserStatus,
+  listAdmins,
+  createAdmin,
   deleteUserPermanently,
   resetUserPassword,
   listReviews,

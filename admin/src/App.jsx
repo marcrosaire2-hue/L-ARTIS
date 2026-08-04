@@ -16,6 +16,8 @@ import ArtisansPage from './pages/ArtisansPage';
 import UsersPage from './pages/UsersPage';
 import ReviewsPage from './pages/ReviewsPage';
 import CatalogPage from './pages/CatalogPage';
+import AdminsPage from './pages/AdminsPage';
+import ActivityPage from './pages/ActivityPage';
 
 /**
  * Le serveur fait tourner le refresh token à chaque usage et considère la
@@ -87,6 +89,8 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="artisans" element={<ArtisansPage />} />
         <Route path="utilisateurs" element={<UsersPage />} />
+        <Route path="administrateurs" element={<AdminsPage />} />
+        <Route path="tracabilite" element={<ActivityPage />} />
         <Route path="avis" element={<ReviewsPage />} />
         <Route path="catalogue" element={<CatalogPage />} />
       </Route>

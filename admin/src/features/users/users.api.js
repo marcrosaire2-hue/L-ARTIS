@@ -15,17 +15,17 @@ export const usersApi = api.injectEndpoints({
       }),
       transformResponse: unwrapData,
       // Réactiver un compte republie son profil artisan
-      invalidatesTags: ['User', 'Artisan'],
+      invalidatesTags: ['User', 'Artisan', 'Activity'],
     }),
     // Seule voie de récupération pour un compte sans e-mail
     resetUserPassword: builder.mutation({
       query: (id) => ({ url: `/admin/users/${id}/password`, method: 'PUT' }),
       transformResponse: unwrapData,
-      invalidatesTags: ['User'],
+      invalidatesTags: ['User', 'Activity'],
     }),
     deleteUser: builder.mutation({
       query: (id) => ({ url: `/admin/users/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['User', 'Artisan', 'Review'],
+      invalidatesTags: ['User', 'Artisan', 'Review', 'Activity'],
     }),
   }),
 });

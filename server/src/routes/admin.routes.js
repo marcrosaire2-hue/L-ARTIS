@@ -26,4 +26,12 @@ router.put('/users/:id/password', validate(categoryValidation.id), adminControll
 router.get('/reviews', validate(adminValidation.list), adminController.listReviews);
 router.put('/reviews/:id/status', validate(adminValidation.reviewStatus), adminController.setReviewStatus);
 
+// --- Administrateurs ---
+router.get('/me', adminController.getAdminMe);
+router.get('/admins', adminController.listAdmins);
+router.post('/admins', validate(adminValidation.createAdmin), adminController.createAdmin);
+
+// --- Traçabilité des effets admin ---
+router.get('/activities', validate(adminValidation.listActivities), adminController.listActivities);
+
 module.exports = router;

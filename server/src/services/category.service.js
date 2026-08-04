@@ -81,7 +81,9 @@ async function deleteCategory(categoryId) {
     throw new ApiError(409, `Supprimez d'abord les ${trades} métier(s) de cette catégorie`);
   }
 
+  const snapshot = { name: category.name, slug: category.slug };
   await category.deleteOne();
+  return snapshot;
 }
 
 async function createTrade({ name, categoryId, description, icon, image }) {
@@ -123,8 +125,10 @@ async function deleteTrade(tradeId) {
   const trade = await Trade.findById(tradeId);
   if (!trade) throw new ApiError(404, 'Métier introuvable');
 
+  const snapshot = { name: trade.name, slug: trade.slug, category: trade.category };
   await trade.deleteOne();
   await refreshCategoryCounts(trade.category);
+  return snapshot;
 }
 
 /**

@@ -15,6 +15,15 @@ const isObjectId = (value) => {
   return true;
 };
 
+const isStrongPassword = (value) => {
+  if (!REGEX.PASSWORD.test(value)) {
+    throw new Error(
+      'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre'
+    );
+  }
+  return true;
+};
+
 const categoryValidation = {
   create: [
     body('name').trim().isLength({ min: 2, max: 60 }).withMessage('Nom : 2 à 60 caractères'),
@@ -191,6 +200,35 @@ const adminValidation = {
     query('status').optional().isString().isLength({ max: 30 }),
     query('role').optional().isIn(['client', 'artisan', 'admin']),
     query('q').optional().isString().isLength({ max: 100 }),
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 50 }),
+  ],
+  createAdmin: [
+    body('email').trim().isEmail().withMessage('Adresse e-mail invalide'),
+    body('password')
+      .isString()
+      .isLength({ min: 8, max: 72 })
+      .withMessage('Le mot de passe doit contenir entre 8 et 72 caractères')
+      .custom(isStrongPassword),
+    body('firstName')
+      .trim()
+      .isLength({ min: 2, max: 50 })
+      .withMessage('Le prénom doit contenir entre 2 et 50 caractères'),
+    body('lastName')
+      .trim()
+      .isLength({ min: 2, max: 50 })
+      .withMessage('Le nom doit contenir entre 2 et 50 caractères'),
+    body('roleAdmin')
+      .optional()
+      .isIn(['super', 'manager', 'moderator'])
+      .withMessage('Niveau admin invalide (super | manager | moderator)'),
+  ],
+  listActivities: [
+    query('actor').optional().custom(isObjectId),
+    query('action').optional().isString().isLength({ max: 80 }),
+    query('targetType')
+      .optional()
+      .isIn(['artisan', 'user', 'review', 'admin', 'category', 'trade', 'system']),
     query('page').optional().isInt({ min: 1 }),
     query('limit').optional().isInt({ min: 1, max: 50 }),
   ],

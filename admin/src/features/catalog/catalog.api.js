@@ -15,31 +15,31 @@ export const catalogApi = api.injectEndpoints({
     createCategory: builder.mutation({
       query: (body) => ({ url: '/categories', method: 'POST', body }),
       transformResponse: unwrapData,
-      invalidatesTags: ['Category'],
+      invalidatesTags: ['Category', 'Activity'],
     }),
     updateCategory: builder.mutation({
       query: ({ id, ...body }) => ({ url: `/categories/${id}`, method: 'PUT', body }),
       transformResponse: unwrapData,
-      invalidatesTags: ['Category'],
+      invalidatesTags: ['Category', 'Activity'],
     }),
     deleteCategory: builder.mutation({
       query: (id) => ({ url: `/categories/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Category'],
+      invalidatesTags: ['Category', 'Activity'],
     }),
     createTrade: builder.mutation({
       query: (body) => ({ url: '/categories/trades/create', method: 'POST', body }),
       transformResponse: unwrapData,
       // Le nombre de métiers est stocké sur la catégorie
-      invalidatesTags: ['Trade', 'Category'],
+      invalidatesTags: ['Trade', 'Category', 'Activity'],
     }),
     updateTrade: builder.mutation({
       query: ({ id, ...body }) => ({ url: `/categories/trades/${id}`, method: 'PUT', body }),
       transformResponse: unwrapData,
-      invalidatesTags: ['Trade', 'Category'],
+      invalidatesTags: ['Trade', 'Category', 'Activity'],
     }),
     deleteTrade: builder.mutation({
       query: (id) => ({ url: `/categories/trades/${id}`, method: 'DELETE' }),
-      invalidatesTags: ['Trade', 'Category'],
+      invalidatesTags: ['Trade', 'Category', 'Activity'],
     }),
   }),
 });

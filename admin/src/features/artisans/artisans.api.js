@@ -15,7 +15,7 @@ export const artisansApi = api.injectEndpoints({
       }),
       transformResponse: unwrapData,
       // Valider un artisan modifie aussi accountStatus côté User
-      invalidatesTags: ['Artisan', 'User'],
+      invalidatesTags: ['Artisan', 'User', 'Activity'],
     }),
   }),
 });

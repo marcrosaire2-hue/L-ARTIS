@@ -1,5 +1,14 @@
 import { NavLink } from 'react-router-dom';
-import { Hammer, LayoutDashboard, ShieldCheck, Star, Tags, Users } from 'lucide-react';
+import {
+  Activity,
+  Hammer,
+  LayoutDashboard,
+  Shield,
+  ShieldCheck,
+  Star,
+  Tags,
+  Users,
+} from 'lucide-react';
 
 /**
  * Barre latérale d'administration — référence de navigation officielle.
@@ -10,6 +19,8 @@ const NAV_ITEMS = [
   { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
   { to: '/artisans', label: 'Artisans', icon: Hammer },
   { to: '/utilisateurs', label: 'Utilisateurs', icon: Users },
+  { to: '/administrateurs', label: 'Administrateurs', icon: Shield },
+  { to: '/tracabilite', label: 'Traçabilité', icon: Activity },
   { to: '/avis', label: 'Avis', icon: Star },
   { to: '/catalogue', label: 'Catalogue', icon: Tags },
 ];

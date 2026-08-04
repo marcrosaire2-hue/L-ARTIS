@@ -15,7 +15,7 @@ export const reviewsApi = api.injectEndpoints({
       }),
       transformResponse: unwrapData,
       // La modération recalcule la note moyenne de l'artisan
-      invalidatesTags: ['Review', 'Artisan'],
+      invalidatesTags: ['Review', 'Artisan', 'Activity'],
     }),
   }),
 });
