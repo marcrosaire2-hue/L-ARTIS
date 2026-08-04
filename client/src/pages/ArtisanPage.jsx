@@ -1,9 +1,27 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { BadgeCheck, Clock, Images, MapPin, MessageCircle, Phone, Star, UserX } from 'lucide-react';
+import {
+  BadgeCheck,
+  ClipboardList,
+  Clock,
+  Flag,
+  Heart,
+  Images,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Star,
+  UserX,
+} from 'lucide-react';
 import { useGetArtisanQuery } from '../features/artisans/artisans.api';
 import { useCreateReviewMutation } from '../features/reviews/reviews.api';
+import {
+  useAddFavoriteMutation,
+  useListFavoritesQuery,
+  useRemoveFavoriteMutation,
+} from '../features/favorites/favorites.api';
+import { useCreateReportMutation } from '../features/reports/reports.api';
 import { selectUser } from '../features/auth/authSlice';
 import {
   Alert,
@@ -12,9 +30,12 @@ import {
   Card,
   Container,
   EmptyState,
+  Field,
+  Input,
   LinkButton,
   Loading,
   Rating,
+  Select,
   Textarea,
 } from '../components/ui';
 import {
@@ -87,19 +108,72 @@ function Header({ artisan }) {
   );
 }
 
+const REPORT_REASONS = [
+  { value: 'profil_frauduleux', label: 'Profil frauduleux' },
+  { value: 'fausses_informations', label: 'Fausses informations' },
+  { value: 'comportement_inapproprie', label: 'Comportement inapproprié' },
+  { value: 'arnaque', label: 'Arnaque' },
+  { value: 'spam', label: 'Spam' },
+  { value: 'contenu_illicite', label: 'Contenu illicite' },
+  { value: 'autre', label: 'Autre' },
+];
+
 /**
- * Appel direct et WhatsApp, les deux canaux réels au Bénin.
- *
- * Ce sont de vrais liens (`<a>`), pas des boutons habillés en liens : un
- * <button> imbriqué dans un <a> est du HTML invalide, il intercepte le clic
- * et le lien `tel:` ne se déclenche jamais — c'est ce qui faisait que le
- * bouton « Appeler » ne réagissait pas.
- *
- * wa.me exige le numéro en chiffres, sans « + » ni séparateurs.
+ * Appel direct et WhatsApp, plus actions client : devis, favoris, message, signalement.
  */
 function ContactActions({ artisan }) {
+  const user = useSelector(selectUser);
+  const navigate = useNavigate();
+  const isClient = user?.role === 'client';
+
+  const { data: favoritesData } = useListFavoritesQuery(undefined, {
+    skip: !isClient,
+  });
+  const [addFavorite, { isLoading: adding }] = useAddFavoriteMutation();
+  const [removeFavorite, { isLoading: removing }] = useRemoveFavoriteMutation();
+  const [createReport, { isLoading: reporting }] = useCreateReportMutation();
+
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState('profil_frauduleux');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportSent, setReportSent] = useState(false);
+  const [actionError, setActionError] = useState(null);
+
   const phone = artisan.contactPhone;
   const whatsapp = (artisan.socialLinks?.whatsapp || phone || '').replace(/\D/g, '');
+  const isFavorite = (favoritesData?.items ?? []).some(
+    (entry) => String(entry.artisan?._id) === String(artisan._id)
+  );
+
+  const toggleFavorite = async () => {
+    setActionError(null);
+    try {
+      if (isFavorite) {
+        await removeFavorite(artisan._id).unwrap();
+      } else {
+        await addFavorite(artisan._id).unwrap();
+      }
+    } catch (favoriteError) {
+      setActionError(errorMessage(favoriteError, 'Action impossible.'));
+    }
+  };
+
+  const submitReport = async (event) => {
+    event.preventDefault();
+    setActionError(null);
+    try {
+      await createReport({
+        targetType: 'artisan',
+        targetId: artisan._id,
+        reason: reportReason,
+        description: reportDescription.trim() || undefined,
+      }).unwrap();
+      setReportSent(true);
+      setShowReport(false);
+    } catch (reportError) {
+      setActionError(errorMessage(reportError, "Le signalement n'a pas pu être envoyé."));
+    }
+  };
 
   return (
     <Card className="p-5">
@@ -136,7 +210,107 @@ function ContactActions({ artisan }) {
         ) : (
           <p className="text-sm text-slate-500">Numéro non renseigné.</p>
         )}
+
+        {user && isClient && (
+          <>
+            <hr className="my-2 border-slate-200" />
+            <Link
+              to={`/devis/nouveau?artisanId=${encodeURIComponent(artisan.artisanId)}&name=${encodeURIComponent(artisan.displayName)}`}
+              className="w-full"
+            >
+              <Button size="lg" className="w-full">
+                <ClipboardList className="size-5" aria-hidden="true" />
+                Demander un devis
+              </Button>
+            </Link>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full"
+              loading={adding || removing}
+              onClick={toggleFavorite}
+            >
+              <Heart
+                className={`size-5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`}
+                aria-hidden="true"
+              />
+              {isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full"
+              onClick={() => navigate(`/messages?artisanId=${artisan._id}`)}
+            >
+              <MessageCircle className="size-5" aria-hidden="true" />
+              Message
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-slate-500"
+              onClick={() => setShowReport((open) => !open)}
+            >
+              <Flag className="size-4" aria-hidden="true" />
+              Signaler ce profil
+            </Button>
+          </>
+        )}
+
+        {!user && (
+          <p className="mt-2 text-center text-sm text-slate-600">
+            <Link to="/connexion" className="font-medium text-brand-700 hover:underline">
+              Connectez-vous
+            </Link>{' '}
+            pour demander un devis ou envoyer un message.
+          </p>
+        )}
       </div>
+
+      {actionError && (
+        <div className="mt-3">
+          <Alert>{actionError}</Alert>
+        </div>
+      )}
+
+      {reportSent && (
+        <div className="mt-3">
+          <Alert tone="green">Signalement envoyé. Merci pour votre vigilance.</Alert>
+        </div>
+      )}
+
+      {showReport && isClient && (
+        <form onSubmit={submitReport} className="mt-4 border-t border-slate-200 pt-4">
+          <p className="mb-3 text-sm font-medium text-slate-900">Signaler ce profil</p>
+          <Field label="Motif" required>
+            <Select value={reportReason} onChange={(e) => setReportReason(e.target.value)}>
+              {REPORT_REASONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Précisions" className="mt-3">
+            <Textarea
+              rows={3}
+              maxLength={2000}
+              value={reportDescription}
+              onChange={(e) => setReportDescription(e.target.value)}
+              placeholder="Décrivez le problème…"
+            />
+          </Field>
+          <div className="mt-3 flex gap-2">
+            <Button type="submit" size="sm" loading={reporting}>
+              Envoyer
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowReport(false)}>
+              Annuler
+            </Button>
+          </div>
+        </form>
+      )}
+
       {artisan.pricing?.fromPrice > 0 && (
         <p className="mt-4 border-t border-slate-200 pt-4 text-sm text-slate-600">
           Tarifs à partir de{' '}

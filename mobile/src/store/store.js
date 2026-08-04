@@ -11,6 +11,9 @@ import '../features/reviews/reviews.api';
 import '../features/favorites/favorites.api';
 import '../features/quotes/quotes.api';
 import '../features/notifications/notifications.api';
+import '../features/conversations/conversations.api';
+import '../features/reports/reports.api';
+import '../features/subscriptions/subscriptions.api';
 
 export const store = configureStore({
   reducer: {

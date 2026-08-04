@@ -3,6 +3,7 @@
  * Traité par un administrateur (pending -> reviewed | dismissed).
  */
 const mongoose = require('mongoose');
+const paginatePlugin = require('./plugins/paginate.plugin');
 const { REPORT_STATUS } = require('../constants');
 
 const reportSchema = new mongoose.Schema(
@@ -58,5 +59,7 @@ const reportSchema = new mongoose.Schema(
 );
 
 reportSchema.index({ status: 1, createdAt: -1 });
+
+paginatePlugin(reportSchema);
 
 module.exports = mongoose.model('Report', reportSchema);

@@ -23,6 +23,29 @@ export const REVIEW_STATUS = {
   hidden: { label: 'Masqué', tone: 'slate' },
 };
 
+export const REPORT_STATUS = {
+  pending: { label: 'En attente', tone: 'amber' },
+  reviewed: { label: 'Traité', tone: 'green' },
+  dismissed: { label: 'Classé sans suite', tone: 'slate' },
+};
+
+export const REPORT_REASONS = {
+  profil_frauduleux: 'Profil frauduleux',
+  fausses_informations: 'Fausses informations',
+  comportement_inapproprie: 'Comportement inapproprié',
+  arnaque: 'Arnaque',
+  spam: 'Spam',
+  contenu_illicite: 'Contenu illicite',
+  autre: 'Autre',
+};
+
+export const REPORT_TARGET_TYPES = {
+  artisan: 'Artisan',
+  review: 'Avis',
+  quote: 'Devis',
+  message: 'Message',
+};
+
 export const ROLES = {
   admin: { label: 'Administrateur', tone: 'purple' },
   artisan: { label: 'Artisan', tone: 'blue' },

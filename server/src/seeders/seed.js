@@ -2,6 +2,9 @@
  * Seed idempotent : catégories + métiers + géographie du Bénin.
  * Lancer : npm run seed
  * Peut être relancé sans risque (upsert par slug / index unique).
+ *
+ * Géographie : 12 départements, 77 communes, arrondissements / quartiers
+ * (référentiel officiel + quartiers urbains pour Cotonou, Parakou, Porto-Novo…).
  */
 const env = require('../config/env');
 const logger = require('../config/logger');
@@ -10,26 +13,119 @@ const { Category, Trade, Location } = require('../models');
 const slugify = require('../utils/slugify');
 const ARRONDISSEMENTS_BY_COMMUNE = require('./arrondissements.json');
 
-// --- Géographie du Bénin : départements -> communes (77) ---
+/**
+ * Départements et communes du Bénin (liste officielle des 77 communes).
+ * Les quartiers / arrondissements détaillés sont dans arrondissements.json.
+ */
 const BENIN_DEPARTMENTS = [
-  { department: 'Alibori', communes: ['Banikoara', 'Gogounou', 'Kandi', 'Karimama', 'Malanville', 'Ségbana'] },
-  { department: 'Atacora', communes: ['Boukoumbé', 'Cobly', 'Kérou', 'Kouandé', 'Matéri', 'Natitingou', 'Péhunco', 'Tanguiéta', 'Toucountouna'] },
-  { department: 'Atlantique', communes: ['Abomey-Calavi', 'Allada', 'Kpomassè', 'Ouidah', 'Sô-Ava', 'Toffo', 'Tori-Bossito', 'Zè'] },
-  { department: 'Borgou', communes: ['Bembéréké', 'Kalalé', "N'Dali", 'Nikki', 'Parakou', 'Pèrèrè', 'Sinendé', 'Tchaourou'] },
-  { department: 'Collines', communes: ['Bantè', 'Dassa-Zoumè', 'Glazoué', 'Ouèssè', 'Savalou', 'Savè'] },
-  { department: 'Couffo', communes: ['Aplahoué', 'Djakotomey', 'Dogbo', 'Klouékanmè', 'Lalo', 'Toviklin'] },
-  { department: 'Donga', communes: ['Bassila', 'Copargo', 'Djougou', 'Ouaké'] },
-  { department: 'Littoral', communes: ['Cotonou'] },
-  { department: 'Mono', communes: ['Athiémé', 'Bopa', 'Comè', 'Grand-Popo', 'Houéyogbé', 'Lokossa'] },
-  { department: 'Ouémé', communes: ['Adjarra', 'Adjohoun', 'Aguégués', 'Akpro-Missérété', 'Avrankou', 'Bonou', 'Dangbo', 'Porto-Novo', 'Sèmè-Kpodji'] },
-  { department: 'Plateau', communes: ['Adja-Ouèrè', 'Ifangni', 'Kétou', 'Pobè', 'Sakété'] },
-  { department: 'Zou', communes: ['Abomey', 'Agbangnizoun', 'Bohicon', 'Covè', 'Djidja', 'Ouinhi', 'Za-Kpota', 'Zagnanado', 'Zogbodomey'] },
-];
-
-// --- Quartiers (principaux arrondissements de Cotonou) ---
-const COTONOU_DISTRICTS = [
-  'Akpakpa', 'Cadjehoun', 'Fidjrossè', 'Gbégamey', 'Dantokpa', 'Haie-Vive',
-  'Jéricho', 'Sainte-Rita', 'Aïtchédji', 'Agla', 'Védoko', 'Enagnon', 'Gbénamè',
+  {
+    department: 'Alibori',
+    chefLieu: 'Kandi',
+    communes: ['Banikoara', 'Gogounou', 'Kandi', 'Karimama', 'Malanville', 'Ségbana'],
+  },
+  {
+    department: 'Atacora',
+    chefLieu: 'Natitingou',
+    communes: [
+      'Boukoumbé',
+      'Cobly',
+      'Kérou',
+      'Kouandé',
+      'Matéri',
+      'Natitingou',
+      'Péhunco',
+      'Tanguiéta',
+      'Toucountouna',
+    ],
+  },
+  {
+    department: 'Atlantique',
+    chefLieu: 'Allada',
+    communes: [
+      'Abomey-Calavi',
+      'Allada',
+      'Kpomassè',
+      'Ouidah',
+      'Sô-Ava',
+      'Toffo',
+      'Tori-Bossito',
+      'Zè',
+    ],
+  },
+  {
+    department: 'Borgou',
+    chefLieu: 'Parakou',
+    communes: [
+      'Bembéréké',
+      'Kalalé',
+      "N'Dali",
+      'Nikki',
+      'Parakou',
+      'Pèrèrè',
+      'Sinendé',
+      'Tchaourou',
+    ],
+  },
+  {
+    department: 'Collines',
+    chefLieu: 'Dassa-Zoumè',
+    communes: ['Bantè', 'Dassa-Zoumè', 'Glazoué', 'Ouèssè', 'Savalou', 'Savè'],
+  },
+  {
+    department: 'Couffo',
+    chefLieu: 'Aplahoué',
+    communes: ['Aplahoué', 'Djakotomey', 'Dogbo', 'Klouékanmè', 'Lalo', 'Toviklin'],
+  },
+  {
+    department: 'Donga',
+    chefLieu: 'Djougou',
+    communes: ['Bassila', 'Copargo', 'Djougou', 'Ouaké'],
+  },
+  {
+    department: 'Littoral',
+    chefLieu: 'Cotonou',
+    communes: ['Cotonou'],
+  },
+  {
+    department: 'Mono',
+    chefLieu: 'Lokossa',
+    communes: ['Athiémé', 'Bopa', 'Comè', 'Grand-Popo', 'Houéyogbé', 'Lokossa'],
+  },
+  {
+    department: 'Ouémé',
+    chefLieu: 'Porto-Novo',
+    communes: [
+      'Adjarra',
+      'Adjohoun',
+      'Aguégués',
+      'Akpro-Missérété',
+      'Avrankou',
+      'Bonou',
+      'Dangbo',
+      'Porto-Novo',
+      'Sèmè-Kpodji',
+    ],
+  },
+  {
+    department: 'Plateau',
+    chefLieu: 'Pobè',
+    communes: ['Adja-Ouèrè', 'Ifangni', 'Kétou', 'Pobè', 'Sakété'],
+  },
+  {
+    department: 'Zou',
+    chefLieu: 'Abomey',
+    communes: [
+      'Abomey',
+      'Agbangnizoun',
+      'Bohicon',
+      'Covè',
+      'Djidja',
+      'Ouinhi',
+      'Za-Kpota',
+      'Zagnanado',
+      'Zogbodomey',
+    ],
+  },
 ];
 
 const CATEGORIES_TRADES = [
@@ -83,60 +179,75 @@ const CATEGORIES_TRADES = [
   },
 ];
 
-async function seed() {
-  await connectDatabase();
+async function upsertLocation(base) {
+  await Location.findOneAndUpdate(base, { $setOnInsert: base }, { upsert: true });
+}
 
-  // --- 1. Géographie du Bénin ---
+async function seedGeography() {
+  let communeEntries = 0;
+  let districtEntries = 0;
+
   for (const entry of BENIN_DEPARTMENTS) {
+    const districtsByCommune = ARRONDISSEMENTS_BY_COMMUNE[entry.department] || {};
+
     for (const commune of entry.communes) {
-      const base = {
+      await upsertLocation({
         country: 'Bénin',
         countryCode: 'BJ',
         department: entry.department,
         commune,
         district: '',
-      };
-      await Location.findOneAndUpdate(
-        base,
-        { $setOnInsert: base },
-        { upsert: true }
-      );
+      });
+      communeEntries += 1;
+
+      const districts = districtsByCommune[commune] || [];
+      for (const district of districts) {
+        if (!district) continue;
+        await upsertLocation({
+          country: 'Bénin',
+          countryCode: 'BJ',
+          department: entry.department,
+          commune,
+          district,
+        });
+        districtEntries += 1;
+      }
     }
   }
-  for (const district of COTONOU_DISTRICTS) {
-    const base = {
-      country: 'Bénin',
-      countryCode: 'BJ',
-      department: 'Littoral',
-      commune: 'Cotonou',
-      district,
-    };
-    await Location.findOneAndUpdate(
-      base,
-      { $setOnInsert: base },
-      { upsert: true }
-    );
-  }
+
+  // Sécurité : toute entrée présente dans le JSON mais absente de la liste
+  // (ex. orthographe) est tout de même importée.
   for (const department of Object.keys(ARRONDISSEMENTS_BY_COMMUNE)) {
     for (const commune of Object.keys(ARRONDISSEMENTS_BY_COMMUNE[department])) {
+      await upsertLocation({
+        country: 'Bénin',
+        countryCode: 'BJ',
+        department,
+        commune,
+        district: '',
+      });
       for (const district of ARRONDISSEMENTS_BY_COMMUNE[department][commune]) {
-        const base = {
+        if (!district) continue;
+        await upsertLocation({
           country: 'Bénin',
           countryCode: 'BJ',
           department,
           commune,
           district,
-        };
-        await Location.findOneAndUpdate(
-          base,
-          { $setOnInsert: base },
-          { upsert: true }
-        );
+        });
       }
     }
   }
 
-  // --- 2. Catégories + métiers ---
+  return { communeEntries, districtEntries };
+}
+
+async function seed() {
+  await connectDatabase();
+
+  const geo = await seedGeography();
+
+  // --- Catégories + métiers ---
   // NOTE : findOneAndUpdate ne déclenche PAS les hooks (pre-validate) :
   // les slugs sont donc générés explicitement ici.
   for (const entry of CATEGORIES_TRADES) {
@@ -166,8 +277,13 @@ async function seed() {
   const categoryCount = await Category.countDocuments();
   const tradeCount = await Trade.countDocuments();
   const locationCount = await Location.countDocuments();
+  const departmentCount = BENIN_DEPARTMENTS.length;
+  const communeCount = BENIN_DEPARTMENTS.reduce((n, d) => n + d.communes.length, 0);
+
   logger.info(
-    `Seed terminé : ${categoryCount} catégories, ${tradeCount} métiers, ${locationCount} localités du Bénin.`
+    `Seed terminé : ${categoryCount} catégories, ${tradeCount} métiers, ` +
+      `${departmentCount} départements, ${communeCount} communes, ` +
+      `${locationCount} localités (${geo.districtEntries} quartiers/arrondissements).`
   );
 
   await disconnectDatabase();

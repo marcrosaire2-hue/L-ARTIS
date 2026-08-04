@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/seeders/seed.js",
+    "seed:locations": "node src/scripts/seedLocations.js",
     "check:search": "node src/scripts/checkSearch.js",
     "migrate:phone": "node src/scripts/migratePhoneIdentifier.js",
     "check:duplicates": "node src/scripts/findDuplicates.js"
@@ -36,6 +37,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
     "nodemailer": "^6.9.14",
+    "socket.io": "^4.8.3",
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^4.7.1"
   },

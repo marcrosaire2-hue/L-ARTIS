@@ -17,6 +17,9 @@ const notificationRoutes = require('./notification.routes');
 const uploadRoutes = require('./upload.routes');
 const locationRoutes = require('./location.routes');
 const adminRoutes = require('./admin.routes');
+const conversationRoutes = require('./conversation.routes');
+const reportRoutes = require('./report.routes');
+const subscriptionRoutes = require('./subscription.routes');
 
 router.get('/health', healthCheck);
 
@@ -30,6 +33,9 @@ router.use('/favorites', favoriteRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/locations', locationRoutes);
+router.use('/conversations', conversationRoutes);
+router.use('/reports', reportRoutes);
+router.use('/subscriptions', subscriptionRoutes);
 router.use('/admin', adminRoutes);
 
 module.exports = router;

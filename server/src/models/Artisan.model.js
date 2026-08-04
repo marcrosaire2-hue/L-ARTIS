@@ -136,6 +136,11 @@ const artisanSchema = new mongoose.Schema(
       match: [REGEX.EMAIL, 'E-mail de contact invalide'],
       default: '',
     },
+    // Identifiants légaux béninois (facultatifs à l'inscription, recommandés).
+    legal: {
+      rccm: { type: String, trim: true, maxlength: 60, default: '' },
+      ifu: { type: String, trim: true, maxlength: 40, default: '' },
+    },
     rating: {
       average: { type: Number, default: 0, min: 0, max: 5 },
       count: { type: Number, default: 0, min: 0 },

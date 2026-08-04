@@ -110,14 +110,20 @@ const refresh = catchAsync(async (req, res) => {
 /* ------------------------------------------------------------------ */
 
 const verifyEmail = catchAsync(async (req, res) => {
-  const user = await authService.verifyEmail({
+  const { user, pendingArtisanValidation } = await authService.verifyEmail({
     code: req.body.code,
     email: req.body.email,
   });
   res.json(
-    ApiResponse.ok('Adresse e-mail vérifiée.', {
-      user: user.toPublicJSON(),
-    })
+    ApiResponse.ok(
+      pendingArtisanValidation
+        ? 'Adresse e-mail vérifiée. Votre profil artisan est en attente de validation.'
+        : 'Adresse e-mail vérifiée.',
+      {
+        user: user.toPublicJSON(),
+        pendingArtisanValidation: Boolean(pendingArtisanValidation),
+      }
+    )
   );
 });
 
@@ -187,6 +193,11 @@ const getMe = catchAsync(async (req, res) => {
   res.json(ApiResponse.ok('Profil récupéré', data));
 });
 
+const acceptTerms = catchAsync(async (req, res) => {
+  const user = await authService.acceptTerms(req.user._id);
+  res.json(ApiResponse.ok('Règlement accepté.', { user: user.toPublicJSON() }));
+});
+
 module.exports = {
   register,
   login,
@@ -199,4 +210,5 @@ module.exports = {
   changePassword,
   getMe,
   deleteMe,
+  acceptTerms,
 };

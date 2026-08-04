@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   Activity,
+  Flag,
   Hammer,
   LayoutDashboard,
   Shield,
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { to: '/administrateurs', label: 'Administrateurs', icon: Shield },
   { to: '/tracabilite', label: 'Traçabilité', icon: Activity },
   { to: '/avis', label: 'Avis', icon: Star },
+  { to: '/signalements', label: 'Signalements', icon: Flag },
   { to: '/catalogue', label: 'Catalogue', icon: Tags },
 ];
 

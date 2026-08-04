@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -152,6 +152,8 @@ function TradePicker({ value, onToggle, error }) {
 }
 
 function SuccessScreen({ email, devCode, role }) {
+  const navigate = useNavigate();
+
   return (
     <Card className="p-8 text-center">
       <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
@@ -162,8 +164,8 @@ function SuccessScreen({ email, devCode, role }) {
       </p>
       {role === 'artisan' && (
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800">
-          Ensuite, complétez votre fiche (photo, présentation, prestations) : elle sera
-          publiée après validation par notre équipe.
+          Après vérification, votre profil restera en attente de validation. Vous recevrez un
+          e-mail de bienvenue une fois le compte approuvé.
         </p>
       )}
       {devCode && (
@@ -172,9 +174,14 @@ function SuccessScreen({ email, devCode, role }) {
           <strong className="tracking-widest text-slate-800">{devCode}</strong>
         </p>
       )}
-      <Link to={`/verification-email?email=${encodeURIComponent(email)}`} className="mt-6 inline-block">
-        <Button>Saisir le code</Button>
-      </Link>
+      <Button
+        className="mt-6"
+        onClick={() =>
+          navigate(`/verification-email?email=${encodeURIComponent(email)}`, { replace: true })
+        }
+      >
+        Saisir le code
+      </Button>
     </Card>
   );
 }
@@ -183,6 +190,7 @@ export default function RegisterPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const role = searchParams.get('role') === 'artisan' ? 'artisan' : 'client';
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [registerUser, { isLoading }] = useRegisterMutation();
   const [login] = useLoginMutation();
@@ -255,10 +263,14 @@ export default function RegisterPage() {
         devCode: result?.dev?.verificationCode,
       });
 
-      // Connexion immédiate, puis saisie du code e-mail.
+      // Connexion immédiate, puis saisie du code e-mail (envoyé à l'inscription).
       try {
         const session = await login({ identifier: values.phone, password: values.password }).unwrap();
         dispatch(credentialsReceived(session));
+        navigate(
+          `/verification-email?email=${encodeURIComponent(values.email.trim().toLowerCase())}`,
+          { replace: true }
+        );
       } catch {
         /* l'écran de confirmation reste affiché */
       }
@@ -295,6 +307,15 @@ export default function RegisterPage() {
                 </div>
 
                 <Field
+                  label="Adresse e-mail"
+                  required
+                  error={errors.email?.message}
+                  hint="Un code de vérification vous sera envoyé à cette adresse."
+                >
+                  <Input type="email" autoComplete="email" {...register('email')} />
+                </Field>
+
+                <Field
                   label="Numéro de téléphone"
                   required
                   error={errors.phone?.message}
@@ -306,15 +327,6 @@ export default function RegisterPage() {
                     placeholder="01 47 88 01 43"
                     {...register('phone')}
                   />
-                </Field>
-
-                <Field
-                  label="Adresse e-mail"
-                  required
-                  error={errors.email?.message}
-                  hint="Obligatoire pour vérifier votre compte et récupérer votre mot de passe."
-                >
-                  <Input type="email" autoComplete="email" {...register('email')} />
                 </Field>
 
                 <Field
@@ -385,8 +397,8 @@ export default function RegisterPage() {
                     </div>
 
                     <Field
-                      label="Ville / Quartier"
-                      hint="Facultatif — précisez votre ville, zone ou quartier pour que vos clients vous trouvent (ex. Godomey à Abomey-Calavi, Cadjehoun à Cotonou)."
+                      label="Arrondissement / Quartier"
+                      hint="Facultatif — arrondissement ou quartier (ex. Godomey à Abomey-Calavi, Cadjehoun ou Akpakpa à Cotonou)."
                       error={errors.district?.message}
                     >
                       <Select {...register('district')} disabled={!selectedCommune}>

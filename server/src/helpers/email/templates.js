@@ -84,17 +84,33 @@ function resetPasswordTemplate(url, name, appUrl) {
 }
 
 /**
- * Bienvenue.
+ * E-mail après confirmation de l'adresse : le profil artisan attend la validation admin.
+ */
+function pendingValidationTemplate(name) {
+  return layout(`
+    <h2 style="margin:0 0 16px;color:#111827;">E-mail confirmé — validation en cours</h2>
+    <p style="color:#374151;line-height:1.6;">Bonjour ${name},</p>
+    <p style="color:#374151;line-height:1.6;">
+      Merci d'avoir confirmé votre adresse. Votre inscription artisan est bien enregistrée.
+      Notre équipe examine votre profil avant publication (en général sous 24 à 48 h).
+    </p>
+    <p style="color:#374151;line-height:1.6;">
+      Merci de patienter : vous recevrez un e-mail de bienvenue dès que votre compte sera validé.
+    </p>
+  `);
+}
+
+/**
+ * Bienvenue (client après vérif e-mail, artisan après validation admin).
  */
 function welcomeTemplate(name, role) {
   return layout(`
-    <h2 style="margin:0 0 16px;color:#111827;">Bienvenue sur Artisans Marketplace 🎉</h2>
+    <h2 style="margin:0 0 16px;color:#111827;">Bienvenue sur L-ARTIS</h2>
     <p style="color:#374151;line-height:1.6;">Bonjour ${name},</p>
     <p style="color:#374151;line-height:1.6;">
-      Votre compte ${role === 'artisan' ? "d'artisan" : 'client'} a bien été créé.
       ${role === 'artisan'
-        ? 'Votre profil sera publié après validation par notre équipe (24 à 48 h en moyenne).'
-        : 'Vous pouvez dès maintenant rechercher un artisan près de chez vous.'}
+        ? 'Votre profil artisan a été validé par notre équipe. Il est désormais visible par les clients : vous pouvez recevoir des demandes de devis et gérer votre espace artisan.'
+        : 'Votre compte client est prêt. Vous pouvez dès maintenant rechercher un artisan de confiance près de chez vous.'}
     </p>
   `);
 }
@@ -124,4 +140,10 @@ function artisanStatusTemplate(name, status, reason = '') {
   `);
 }
 
-module.exports = { verifyEmailTemplate, resetPasswordTemplate, welcomeTemplate, artisanStatusTemplate };
+module.exports = {
+  verifyEmailTemplate,
+  resetPasswordTemplate,
+  pendingValidationTemplate,
+  welcomeTemplate,
+  artisanStatusTemplate,
+};

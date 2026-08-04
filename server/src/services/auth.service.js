@@ -32,9 +32,10 @@ const { notifyAdmins } = require('./notification.service');
 const {
   verifyEmailTemplate,
   resetPasswordTemplate,
+  pendingValidationTemplate,
   welcomeTemplate,
 } = require('../helpers/email/templates');
-const { ROLES, ACCOUNT_STATUS } = require('../constants');
+const { ROLES, ACCOUNT_STATUS, ARTISAN_STATUS, TERMS_VERSION } = require('../constants');
 const { normalizePhone, looksLikeEmail } = require('../utils/phone');
 
 const REFRESH_COOKIE = 'refresh_token';
@@ -339,8 +340,20 @@ async function logout(refreshToken) {
 /* ------------------------------------------------------------------ */
 
 /**
+ * Indique si le profil artisan attend encore la validation admin.
+ */
+async function isArtisanPendingValidation(userId) {
+  const artisan = await Artisan.findOne({ userId }).select('status');
+  if (!artisan) return true;
+  return artisan.status === ARTISAN_STATUS.PENDING;
+}
+
+/**
  * Vérifie le code reçu par e-mail.
  * `email` (recommandé) restreint la recherche et limite le brute-force.
+ *
+ * Artisan : pas d'e-mail de bienvenue ici — il part à la validation admin.
+ * Client : e-mail de bienvenue immédiat.
  */
 async function verifyEmail({ code, email }) {
   const normalizedCode = String(code || '').replace(/\s/g, '');
@@ -361,8 +374,11 @@ async function verifyEmail({ code, email }) {
     throw new ApiError(400, 'Code invalide ou expiré');
   }
 
+  const pendingArtisanValidation =
+    user.role === ROLES.ARTISAN ? await isArtisanPendingValidation(user._id) : false;
+
   if (user.isEmailVerified) {
-    return user;
+    return { user, pendingArtisanValidation };
   }
 
   user.isEmailVerified = true;
@@ -373,13 +389,21 @@ async function verifyEmail({ code, email }) {
   }
   await user.save();
 
-  await sendEmail({
-    to: user.email,
-    subject: 'Bienvenue sur L-ARTIS',
-    html: welcomeTemplate(user.firstName, user.role),
-  });
+  if (pendingArtisanValidation) {
+    await sendEmail({
+      to: user.email,
+      subject: 'L-ARTIS — validation de votre profil en cours',
+      html: pendingValidationTemplate(user.firstName),
+    });
+  } else {
+    await sendEmail({
+      to: user.email,
+      subject: 'Bienvenue sur L-ARTIS',
+      html: welcomeTemplate(user.firstName, user.role),
+    });
+  }
 
-  return user;
+  return { user, pendingArtisanValidation };
 }
 
 /**
@@ -500,6 +524,18 @@ async function findUserByEmail(email) {
   return User.findOne({ email });
 }
 
+async function acceptTerms(userId) {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(404, 'Utilisateur introuvable');
+  if (user.role === ROLES.ADMIN) {
+    throw new ApiError(400, 'Non applicable aux administrateurs');
+  }
+  user.termsAcceptedAt = new Date();
+  user.termsVersion = TERMS_VERSION;
+  await user.save();
+  return user;
+}
+
 module.exports = {
   register,
   login,
@@ -511,6 +547,7 @@ module.exports = {
   resetPassword,
   changePassword,
   getMe,
+  acceptTerms,
   createSession,
   revokeAllSessions,
   sendVerificationEmail,

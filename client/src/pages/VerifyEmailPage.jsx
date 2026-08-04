@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { CheckCircle2 } from 'lucide-react';
@@ -9,6 +9,14 @@ import {
 import { selectUser, userUpdated } from '../features/auth/authSlice';
 import { Alert, Button, Card, Container, Field, Input } from '../components/ui';
 import { errorMessage } from '../lib/format';
+
+function nextAfterVerify({ role, termsAcceptedAt, pending }) {
+  if (pending) return '/attente-validation';
+  if (!termsAcceptedAt) {
+    return `/reglement/${role === 'artisan' ? 'artisan' : 'client'}?accept=1`;
+  }
+  return role === 'artisan' ? '/artisan' : '/';
+}
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
@@ -21,10 +29,17 @@ export default function VerifyEmailPage() {
   const [code, setCode] = useState(searchParams.get('code') || '');
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(null);
+  const [nextPath, setNextPath] = useState('/');
 
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
   const [resend, { isLoading: resending }] = useResendVerificationMutation();
+
+  useEffect(() => {
+    if (!done) return undefined;
+    const timer = setTimeout(() => navigate(nextPath, { replace: true }), done === 'pending' ? 2200 : 1200);
+    return () => clearTimeout(timer);
+  }, [done, nextPath, navigate]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -39,8 +54,18 @@ export default function VerifyEmailPage() {
         code: digits,
         email: email.trim().toLowerCase(),
       }).unwrap();
-      if (result?.user) dispatch(userUpdated(result.user));
-      setDone(true);
+      const user = result?.user;
+      if (user) dispatch(userUpdated(user));
+      const pending =
+        result?.pendingArtisanValidation === true ||
+        (user?.role || sessionUser?.role) === 'artisan';
+      const dest = nextAfterVerify({
+        role: user?.role || sessionUser?.role,
+        termsAcceptedAt: user?.termsAcceptedAt ?? sessionUser?.termsAcceptedAt,
+        pending,
+      });
+      setNextPath(dest);
+      setDone(pending ? 'pending' : 'ok');
     } catch (verifyError) {
       setError(errorMessage(verifyError, 'Code invalide ou expiré.'));
     }
@@ -58,17 +83,32 @@ export default function VerifyEmailPage() {
     }
   };
 
-  if (done) {
+  if (done === 'pending') {
+    return (
+      <Container className="py-16">
+        <Card className="mx-auto max-w-md p-8 text-center">
+          <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
+          <h1 className="mt-4 text-2xl font-bold text-slate-900">Merci de patienter</h1>
+          <p className="mt-2 text-slate-600">
+            Votre e-mail est confirmé. Notre équipe va valider votre profil artisan. Vous
+            recevrez ensuite un e-mail de bienvenue.
+          </p>
+          <Button className="mt-6" onClick={() => navigate(nextPath, { replace: true })}>
+            Continuer
+          </Button>
+        </Card>
+      </Container>
+    );
+  }
+
+  if (done === 'ok') {
     return (
       <Container className="py-16">
         <Card className="mx-auto max-w-md p-8 text-center">
           <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
           <h1 className="mt-4 text-2xl font-bold text-slate-900">Adresse confirmée</h1>
-          <p className="mt-2 text-slate-600">
-            Votre e-mail est vérifié. Vous pouvez utiliser la récupération de mot de passe en
-            toute sécurité.
-          </p>
-          <Button className="mt-6" onClick={() => navigate(sessionUser ? '/' : '/connexion')}>
+          <p className="mt-2 text-slate-600">Votre e-mail est vérifié. Redirection en cours…</p>
+          <Button className="mt-6" onClick={() => navigate(nextPath, { replace: true })}>
             Continuer
           </Button>
         </Card>

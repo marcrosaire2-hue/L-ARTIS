@@ -273,6 +273,7 @@ const PROFILE_FIELDS = [
   'socialLinks',
   'contactPhone',
   'contactEmail',
+  'legal',
 ];
 
 async function updateProfile(artisanId, data) {

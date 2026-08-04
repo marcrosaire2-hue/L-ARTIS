@@ -15,6 +15,7 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl,
   // Le refresh token voyage dans un cookie httpOnly
   credentials: 'include',
+  timeout: 90_000,
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.accessToken;
     if (token) headers.set('authorization', `Bearer ${token}`);
@@ -65,6 +66,19 @@ export const unwrapData = (response) => response?.data ?? null;
 export const api = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Me', 'Artisan', 'MyArtisan', 'Service', 'Gallery', 'Quote', 'Favorite', 'Review'],
+  tagTypes: [
+    'Me',
+    'Artisan',
+    'MyArtisan',
+    'Service',
+    'Gallery',
+    'Quote',
+    'Favorite',
+    'Review',
+    'Notification',
+    'Conversation',
+    'Subscription',
+    'Report',
+  ],
   endpoints: () => ({}),
 });
