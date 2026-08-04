@@ -2,7 +2,7 @@
   "expo": {
     "name": "L-ARTIS",
     "slug": "lartis",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -24,7 +24,7 @@
       },
       "icon": "./assets/logo.png",
       "package": "com.marc2.lartis",
-      "versionCode": 3,
+      "versionCode": 4,
       "intentFilters": [
         {
           "action": "VIEW",

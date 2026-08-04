@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,6 +11,17 @@ import {
 import { selectUser, userUpdated } from '../src/features/auth/authSlice';
 import { errorMessage } from '../src/lib/format';
 import { colors, radius, spacing, TOUCH_TARGET, typography } from '../src/lib/theme';
+
+function nextAfterVerify({ role, termsAcceptedAt, pending }) {
+  if (pending) return '/attente-validation';
+  if (!termsAcceptedAt) {
+    return {
+      pathname: '/reglement',
+      params: { accept: '1', audience: role === 'artisan' ? 'artisan' : 'client' },
+    };
+  }
+  return role === 'artisan' ? '/espace-artisan' : '/accueil';
+}
 
 /**
  * Saisie du code à 6 chiffres reçu par e-mail.
@@ -31,7 +42,25 @@ export default function VerifyEmailScreen() {
   const [code, setCode] = useState('');
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
-  const [done, setDone] = useState(false);
+  const [done, setDone] = useState(null);
+  const [pendingFlow, setPendingFlow] = useState(false);
+
+  const goNext = (pending) => {
+    const dest = nextAfterVerify({
+      role: sessionUser?.role,
+      termsAcceptedAt: sessionUser?.termsAcceptedAt,
+      pending,
+    });
+    if (typeof dest === 'string') router.replace(dest);
+    else router.replace(dest);
+  };
+
+  useEffect(() => {
+    if (done !== 'pending') return undefined;
+    const timer = setTimeout(() => goNext(true), 2200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   const submit = async () => {
     setError(null);
@@ -42,11 +71,24 @@ export default function VerifyEmailScreen() {
 
     try {
       const result = await verifyEmail({ code: digits, email }).unwrap();
-      if (result?.user) dispatch(userUpdated(result.user));
+      const user = result?.user;
+      if (user) dispatch(userUpdated(user));
       const pending =
         result?.pendingArtisanValidation === true ||
-        (result?.user?.role || sessionUser?.role) === 'artisan';
+        (user?.role || sessionUser?.role) === 'artisan';
+      setPendingFlow(pending);
       setDone(pending ? 'pending' : 'ok');
+      if (!pending) {
+        setTimeout(() => {
+          const dest = nextAfterVerify({
+            role: user?.role || sessionUser?.role,
+            termsAcceptedAt: user?.termsAcceptedAt ?? sessionUser?.termsAcceptedAt,
+            pending: false,
+          });
+          if (typeof dest === 'string') router.replace(dest);
+          else router.replace(dest);
+        }, 1200);
+      }
     } catch (verifyError) {
       setError(errorMessage(verifyError, 'Code invalide ou expiré.'));
     }
@@ -72,22 +114,19 @@ export default function VerifyEmailScreen() {
         title="Merci de patienter"
         subtitle="Votre e-mail est confirmé. Notre équipe va valider votre profil artisan. Vous recevrez ensuite un e-mail de bienvenue."
       >
-        <Button
-          label="Voir l'état de validation"
-          onPress={() => router.replace('/attente-validation')}
-        />
+        <Button label="Continuer" onPress={() => goNext(true)} />
       </AuthShell>
     );
   }
 
-  if (done) {
+  if (done === 'ok') {
     return (
       <AuthShell
         kicker="Compte"
         title="Adresse confirmée"
-        subtitle="Votre e-mail est vérifié. Vous pouvez utiliser la récupération de mot de passe en toute sécurité."
+        subtitle="Votre e-mail est vérifié. Redirection en cours…"
       >
-        <Button label="Continuer" onPress={() => router.replace('/accueil')} />
+        <Button label="Continuer" onPress={() => goNext(pendingFlow)} />
       </AuthShell>
     );
   }
@@ -134,17 +173,6 @@ export default function VerifyEmailScreen() {
       <Pressable onPress={onResend} disabled={resending} style={styles.linkWrap}>
         <Text style={styles.link}>{resending ? 'Envoi…' : 'Renvoyer le code'}</Text>
       </Pressable>
-
-      <Pressable
-        onPress={() =>
-          router.replace(
-            sessionUser?.role === 'artisan' ? '/attente-validation' : '/accueil'
-          )
-        }
-        style={styles.linkWrap}
-      >
-        <Text style={styles.skip}>Plus tard</Text>
-      </Pressable>
     </AuthShell>
   );
 }
@@ -167,7 +195,6 @@ const styles = StyleSheet.create({
   },
   linkWrap: { alignSelf: 'center', paddingVertical: spacing.md },
   link: { color: colors.brand, fontWeight: '700' },
-  skip: { color: colors.textMuted, fontWeight: '600' },
   errorBox: {
     backgroundColor: colors.dangerSurface,
     borderRadius: radius.md,

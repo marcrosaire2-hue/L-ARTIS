@@ -129,9 +129,10 @@ export default function RegisterScreen() {
       } catch {
         /* on continue vers la saisie du code même sans session */
       }
+      // Code déjà envoyé par l'API à l'inscription → saisie immédiate.
       router.replace({
-        pathname: '/reglement',
-        params: { accept: '1', audience: role },
+        pathname: '/verification-email',
+        params: { email: email.trim().toLowerCase() },
       });
     } catch (registerError) {
       setError(errorMessage(registerError, "L'inscription a échoué."));
@@ -179,6 +180,21 @@ export default function RegisterScreen() {
         <TextInput value={lastName} onChangeText={setLastName} style={styles.input} />
       </Field>
       <Field
+        label="Adresse e-mail"
+        required
+        error={fieldError.email}
+        hint="Un code de vérification vous sera envoyé à cette adresse."
+      >
+        <TextInput
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          style={styles.input}
+        />
+      </Field>
+      <Field
         label="Numéro de téléphone"
         required
         error={fieldError.phone}
@@ -190,21 +206,6 @@ export default function RegisterScreen() {
           placeholder="01 47 88 01 43"
           placeholderTextColor={colors.textLight}
           keyboardType="phone-pad"
-          style={styles.input}
-        />
-      </Field>
-      <Field
-        label="Adresse e-mail"
-        required
-        error={fieldError.email}
-        hint="Obligatoire pour vérifier votre compte et récupérer votre mot de passe."
-      >
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
           style={styles.input}
         />
       </Field>
