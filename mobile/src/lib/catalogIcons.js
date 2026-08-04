@@ -1,38 +1,37 @@
 /**
- * Clés d'icônes catalogue (alignées sur l'admin) → MaterialCommunityIcons.
+ * Clés d'icônes catalogue (alignées sur l'admin) → glyphes de secours.
  * Les images uploadées (Cloudinary) restent prioritaires via CatalogVisual.
  */
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const ICON_BY_KEY = {
-  hammer: 'hammer',
-  wrench: 'wrench',
-  paintbrush: 'brush',
-  'paint-roller': 'roller',
-  'paintbrush-roller': 'roller',
-  scissors: 'content-cut',
-  drill: 'drill',
-  toolbox: 'toolbox',
-  briefcase: 'briefcase',
-  'briefcase-business': 'briefcase',
-  cog: 'cog',
-  gear: 'cog',
-  ruler: 'ruler',
-  'pen-tool': 'pencil-ruler',
-  sparkles: 'shimmer',
-  layers: 'layers',
-  'brick-wall': 'wall',
-  shirt: 'tshirt-crew',
-  truck: 'truck',
-  bolt: 'flash',
-  droplets: 'water',
-  utensils: 'silverware-fork-knife',
-  plane: 'airplane',
-  'washing-machine': 'washing-machine',
-  lamp: 'lamp',
-  'tree-pine': 'pine-tree',
-  bike: 'bicycle',
-  folder: 'folder',
+const GLYPH_BY_KEY = {
+  hammer: '🔨',
+  wrench: '🔧',
+  paintbrush: '🖌️',
+  'paint-roller': '🎨',
+  'paintbrush-roller': '🎨',
+  scissors: '✂️',
+  drill: '🪛',
+  toolbox: '🧰',
+  briefcase: '💼',
+  'briefcase-business': '💼',
+  cog: '⚙️',
+  gear: '⚙️',
+  ruler: '📏',
+  'pen-tool': '🖊️',
+  sparkles: '✨',
+  layers: '📚',
+  'brick-wall': '🧱',
+  shirt: '👕',
+  truck: '🚚',
+  bolt: '⚡',
+  droplets: '💧',
+  utensils: '🍽️',
+  plane: '✈️',
+  'washing-machine': '🧺',
+  lamp: '💡',
+  'tree-pine': '🌳',
+  bike: '🚲',
+  folder: '📁',
 };
 
 const EMOJI_TO_KEY = {
@@ -71,12 +70,11 @@ export function isEmojiIcon(value) {
   return trimmed.length > 0 && !/^[a-z0-9-]+$/i.test(trimmed);
 }
 
-/** Nom MaterialCommunityIcons pour une clé / emoji catalogue. */
-export function getCatalogIconName(value) {
-  if (!value) return 'wrench';
+/** Glyphe de secours pour une clé / emoji catalogue. */
+export function getCatalogGlyph(value) {
+  if (!value) return '🔧';
   const trimmed = String(value).trim();
+  if (isEmojiIcon(trimmed)) return trimmed;
   const key = (EMOJI_TO_KEY[trimmed] ?? trimmed).toLowerCase();
-  return ICON_BY_KEY[key] ?? 'wrench';
+  return GLYPH_BY_KEY[key] ?? '🔧';
 }
-
-export { MaterialCommunityIcons };
