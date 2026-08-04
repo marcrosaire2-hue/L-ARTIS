@@ -25,7 +25,7 @@ export default function SearchInput({ value, onChange, placeholder = 'Rechercher
   }, [debounced, onChange]);
 
   return (
-    <div className="relative min-w-0 flex-1 sm:max-w-xs">
+    <div className="relative min-w-0 w-full flex-1 sm:max-w-xs">
       <Search
         className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
         aria-hidden="true"

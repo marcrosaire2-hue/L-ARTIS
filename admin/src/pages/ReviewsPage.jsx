@@ -10,6 +10,7 @@ import {
   DataTable,
   EmptyState,
   ErrorState,
+  ListCard,
   PageHeader,
   Pagination,
   Select,
@@ -55,7 +56,7 @@ function Stars({ value }) {
 
 function ReviewsStatsCard({ total, loading }) {
   return (
-    <Card className="flex items-center gap-4 p-5 sm:min-w-64">
+    <Card className="flex w-full items-center gap-4 p-4 sm:min-w-64 sm:p-5">
       <span className="flex size-12 shrink-0 items-center justify-center rounded-panel bg-gradient-to-br from-violet-100 to-violet-200/70 text-violet-700">
         <Star className="size-6" aria-hidden="true" />
       </span>
@@ -70,6 +71,25 @@ function ReviewsStatsCard({ total, loading }) {
         <p className="mt-1 text-sm text-slate-500">Avis à modérer</p>
       </div>
     </Card>
+  );
+}
+
+function ReviewActions({ review, onApprove, onHide }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {review.status !== 'approved' && (
+        <Button size="sm" onClick={() => onApprove(review)}>
+          <Check className="size-3.5" aria-hidden="true" />
+          Publier
+        </Button>
+      )}
+      {review.status !== 'hidden' && (
+        <Button size="sm" variant="secondary" onClick={() => onHide(review)}>
+          <EyeOff className="size-3.5" aria-hidden="true" />
+          Masquer
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -170,7 +190,40 @@ export default function ReviewsPage() {
           />
         ) : (
           <>
-            <DataTable headers={HEADERS}>
+            <DataTable
+              headers={HEADERS}
+              mobile={reviews.map((review) => (
+                <ListCard key={review._id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar user={review.client} tone="brand" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {fullName(review.client)}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {review.artisan?.displayName ?? 'Artisan supprimé'}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge value={review.status} map={REVIEW_STATUS} />
+                  </div>
+                  <Stars value={review.rating} />
+                  <p className="line-clamp-3 text-sm text-slate-600">{review.comment}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                      <CalendarDays className="size-3.5 text-slate-400" aria-hidden="true" />
+                      {formatDate(review.createdAt)}
+                    </span>
+                    <ReviewActions
+                      review={review}
+                      onApprove={(r) => setAction(approveAction(r))}
+                      onHide={(r) => setAction(hideAction(r))}
+                    />
+                  </div>
+                </ListCard>
+              ))}
+            >
               {reviews.map((review) => (
                 <tr
                   key={review._id}
@@ -215,23 +268,12 @@ export default function ReviewsPage() {
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex justify-end gap-1.5">
-                      {review.status !== 'approved' && (
-                        <Button size="sm" onClick={() => setAction(approveAction(review))}>
-                          <Check className="size-3.5" aria-hidden="true" />
-                          Publier
-                        </Button>
-                      )}
-                      {review.status !== 'hidden' && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => setAction(hideAction(review))}
-                        >
-                          <EyeOff className="size-3.5" aria-hidden="true" />
-                          Masquer
-                        </Button>
-                      )}
+                    <div className="flex justify-end">
+                      <ReviewActions
+                        review={review}
+                        onApprove={(r) => setAction(approveAction(r))}
+                        onHide={(r) => setAction(hideAction(r))}
+                      />
                     </div>
                   </td>
                 </tr>

@@ -19,6 +19,7 @@ import {
   DataTable,
   EmptyState,
   ErrorState,
+  ListCard,
   PageHeader,
   Pagination,
   Modal,
@@ -53,7 +54,7 @@ const HEADERS = [
 
 function UserStatsCard({ total, loading }) {
   return (
-    <Card className="flex items-center gap-4 p-5 sm:min-w-64">
+    <Card className="flex w-full items-center gap-4 p-4 sm:min-w-64 sm:p-5">
       <span className="flex size-12 shrink-0 items-center justify-center rounded-panel bg-gradient-to-br from-violet-100 to-violet-200/70 text-violet-700">
         <Users className="size-6" aria-hidden="true" />
       </span>
@@ -68,6 +69,56 @@ function UserStatsCard({ total, loading }) {
         <p className="mt-1 text-sm text-slate-500">Utilisateurs inscrits</p>
       </div>
     </Card>
+  );
+}
+
+function UserActions({ user, isSelf, onSuspend, onReactivate, onPassword, onDelete }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {user.accountStatus === 'suspended' ? (
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={isSelf}
+          onClick={() => onReactivate(user)}
+          title="Réactiver le compte"
+        >
+          <RotateCcw className="size-3.5" aria-hidden="true" />
+          Réactiver
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={isSelf}
+          onClick={() => onSuspend(user)}
+          title="Suspendre le compte"
+        >
+          <Ban className="size-3.5" aria-hidden="true" />
+          Suspendre
+        </Button>
+      )}
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={isSelf || user.role === 'admin'}
+        onClick={() => onPassword(user)}
+        title="Réinitialiser le mot de passe"
+        className="size-8 rounded-lg p-0 hover:bg-brand-50 hover:text-brand-700"
+      >
+        <KeyRound className="size-4" aria-hidden="true" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={isSelf}
+        onClick={() => onDelete(user)}
+        title="Supprimer définitivement"
+        className="size-8 rounded-lg p-0 hover:bg-red-50 hover:text-red-600"
+      >
+        <Trash2 className="size-4" aria-hidden="true" />
+      </Button>
+    </div>
   );
 }
 
@@ -214,7 +265,47 @@ export default function UsersPage() {
           />
         ) : (
           <>
-            <DataTable headers={HEADERS}>
+            <DataTable
+              headers={HEADERS}
+              mobile={users.map((user) => {
+                const isSelf = String(user._id) === String(currentUser?.id);
+                return (
+                  <ListCard key={user._id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar user={user} />
+                        <div className="min-w-0">
+                          <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-slate-900">
+                            <span className="truncate">{fullName(user)}</span>
+                            {isSelf && <Badge tone="green">Vous</Badge>}
+                          </p>
+                          <p className="truncate text-xs text-slate-500">
+                            {user.phone || user.email || '—'}
+                          </p>
+                        </div>
+                      </div>
+                      <RoleBadge role={user.role} />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <StatusBadge value={user.accountStatus} map={ACCOUNT_STATUS} />
+                      {!user.isEmailVerified && <Badge tone="slate">E-mail non vérifié</Badge>}
+                      <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                        <CalendarDays className="size-3.5 text-slate-400" aria-hidden="true" />
+                        {formatDate(user.createdAt)}
+                      </span>
+                    </div>
+                    <UserActions
+                      user={user}
+                      isSelf={isSelf}
+                      onSuspend={(u) => setAction(suspendAction(u))}
+                      onReactivate={(u) => setAction(reactivateAction(u))}
+                      onPassword={(u) => setAction(passwordAction(u))}
+                      onDelete={(u) => setAction(deleteAction(u))}
+                    />
+                  </ListCard>
+                );
+              })}
+            >
               {users.map((user) => {
                 const isSelf = String(user._id) === String(currentUser?.id);
                 return (
@@ -263,50 +354,15 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4">
-                      <div className="flex justify-end gap-1.5">
-                        {user.accountStatus === 'suspended' ? (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            disabled={isSelf}
-                            onClick={() => setAction(reactivateAction(user))}
-                            title="Réactiver le compte"
-                          >
-                            <RotateCcw className="size-3.5" aria-hidden="true" />
-                            Réactiver
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            disabled={isSelf}
-                            onClick={() => setAction(suspendAction(user))}
-                            title="Suspendre le compte"
-                          >
-                            <Ban className="size-3.5" aria-hidden="true" />
-                            Suspendre
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={isSelf || user.role === 'admin'}
-                          onClick={() => setAction(passwordAction(user))}
-                          title="Réinitialiser le mot de passe"
-                          className="size-8 rounded-lg p-0 hover:bg-brand-50 hover:text-brand-700"
-                        >
-                          <KeyRound className="size-4" aria-hidden="true" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={isSelf}
-                          onClick={() => setAction(deleteAction(user))}
-                          title="Supprimer définitivement"
-                          className="size-8 rounded-lg p-0 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 className="size-4" aria-hidden="true" />
-                        </Button>
+                      <div className="flex justify-end">
+                        <UserActions
+                          user={user}
+                          isSelf={isSelf}
+                          onSuspend={(u) => setAction(suspendAction(u))}
+                          onReactivate={(u) => setAction(reactivateAction(u))}
+                          onPassword={(u) => setAction(passwordAction(u))}
+                          onDelete={(u) => setAction(deleteAction(u))}
+                        />
                       </div>
                     </td>
                   </tr>

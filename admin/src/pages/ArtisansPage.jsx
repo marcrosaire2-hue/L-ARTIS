@@ -12,6 +12,7 @@ import {
   DataTable,
   EmptyState,
   ErrorState,
+  ListCard,
   PageHeader,
   Pagination,
   Select,
@@ -78,7 +79,7 @@ function actionFor(artisan, status) {
 
 function ArtisanStatsCard({ total, loading }) {
   return (
-    <Card className="flex items-center gap-4 p-5 sm:min-w-64">
+    <Card className="flex w-full items-center gap-4 p-4 sm:min-w-64 sm:p-5">
       <span className="flex size-12 shrink-0 items-center justify-center rounded-panel bg-gradient-to-br from-violet-100 to-violet-200/70 text-violet-700">
         <Hammer className="size-6" aria-hidden="true" />
       </span>
@@ -93,6 +94,41 @@ function ArtisanStatsCard({ total, loading }) {
         <p className="mt-1 text-sm text-slate-500">Fiches artisans</p>
       </div>
     </Card>
+  );
+}
+
+function ArtisanActions({ artisan, onAction }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {artisan.status !== 'validated' && (
+        <Button size="sm" onClick={() => onAction(actionFor(artisan, 'validated'))} title="Publier la fiche">
+          <Check className="size-3.5" aria-hidden="true" />
+          Valider
+        </Button>
+      )}
+      {artisan.status !== 'rejected' && (
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => onAction(actionFor(artisan, 'rejected'))}
+          title="Refuser la fiche"
+        >
+          <X className="size-3.5" aria-hidden="true" />
+          Refuser
+        </Button>
+      )}
+      {artisan.status !== 'suspended' && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onAction(actionFor(artisan, 'suspended'))}
+          title="Suspendre l'artisan"
+          className="size-8 rounded-control p-0 hover:bg-red-50 hover:text-red-600"
+        >
+          <Ban className="size-4" aria-hidden="true" />
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -176,7 +212,45 @@ export default function ArtisansPage() {
           />
         ) : (
           <>
-            <DataTable headers={HEADERS}>
+            <DataTable
+              headers={HEADERS}
+              mobile={artisans.map((artisan) => (
+                <ListCard key={artisan._id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar user={{ firstName: artisan.displayName }} tone="brand" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {artisan.displayName}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {artisan.location?.commune || '—'}
+                          {artisan.location?.department ? ` · ${artisan.location.department}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge value={artisan.status} map={ARTISAN_STATUS} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span className="truncate">{fullName(artisan.userId)}</span>
+                    <span className="text-slate-300">·</span>
+                    {artisan.rating?.count ? (
+                      <Badge tone={artisan.rating.average >= 4 ? 'green' : 'amber'}>
+                        {artisan.rating.average}/5
+                      </Badge>
+                    ) : (
+                      <span>Aucun avis</span>
+                    )}
+                    <span className="text-slate-300">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarDays className="size-3.5 text-slate-400" aria-hidden="true" />
+                      {formatDate(artisan.createdAt)}
+                    </span>
+                  </div>
+                  <ArtisanActions artisan={artisan} onAction={setAction} />
+                </ListCard>
+              ))}
+            >
               {artisans.map((artisan) => (
                 <tr
                   key={artisan._id}
@@ -242,39 +316,8 @@ export default function ArtisansPage() {
                     </span>
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex justify-end gap-1.5">
-                      {artisan.status !== 'validated' && (
-                        <Button
-                          size="sm"
-                          onClick={() => setAction(actionFor(artisan, 'validated'))}
-                          title="Publier la fiche"
-                        >
-                          <Check className="size-3.5" aria-hidden="true" />
-                          Valider
-                        </Button>
-                      )}
-                      {artisan.status !== 'rejected' && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => setAction(actionFor(artisan, 'rejected'))}
-                          title="Refuser la fiche"
-                        >
-                          <X className="size-3.5" aria-hidden="true" />
-                          Refuser
-                        </Button>
-                      )}
-                      {artisan.status !== 'suspended' && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setAction(actionFor(artisan, 'suspended'))}
-                          title="Suspendre l'artisan"
-                          className="size-8 rounded-control p-0 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Ban className="size-4" aria-hidden="true" />
-                        </Button>
-                      )}
+                    <div className="flex justify-end">
+                      <ArtisanActions artisan={artisan} onAction={setAction} />
                     </div>
                   </td>
                 </tr>

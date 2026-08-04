@@ -18,10 +18,11 @@ import { errorMessage } from '../lib/format';
 export default function CatalogPage() {
   const categories = useListCategoriesQuery();
   const [selectedId, setSelectedId] = useState(null);
+  const [mobileDetail, setMobileDetail] = useState(false);
 
   const selected = categories.data?.find((category) => category._id === selectedId) ?? null;
 
-  // Sélectionne la première catégorie dès que la liste arrive
+  // Sélectionne la première catégorie dès que la liste arrive (vue desktop)
   useEffect(() => {
     if (!selectedId && categories.data?.length) setSelectedId(categories.data[0]._id);
   }, [categories.data, selectedId]);
@@ -39,7 +40,10 @@ export default function CatalogPage() {
   const [action, setAction] = useState(null);
   const [actionError, setActionError] = useState(null);
 
-  const selectCategory = useCallback((id) => setSelectedId(id), []);
+  const selectCategory = useCallback((id) => {
+    setSelectedId(id);
+    setMobileDetail(true);
+  }, []);
 
   const openNewCategory = useCallback(() => setCategoryForm({}), []);
   const openEditCategory = useCallback((category) => setCategoryForm({ category }), []);
@@ -83,7 +87,10 @@ export default function CatalogPage() {
     try {
       if (action.kind === 'category') {
         await deleteCategory(action.target._id).unwrap();
-        if (action.target._id === selectedId) setSelectedId(null);
+        if (action.target._id === selectedId) {
+          setSelectedId(null);
+          setMobileDetail(false);
+        }
       } else {
         await deleteTrade(action.target._id).unwrap();
       }
@@ -100,43 +107,52 @@ export default function CatalogPage() {
         title="Catalogue"
         description="Gérez les catégories et métiers proposés aux artisans."
         actions={
-          <Button onClick={openNewCategory} aria-label="Créer une nouvelle catégorie">
+          <Button
+            onClick={openNewCategory}
+            aria-label="Créer une nouvelle catégorie"
+            className="w-full sm:w-auto"
+          >
             <Plus className="size-4" aria-hidden="true" />
             Nouvelle catégorie
           </Button>
         }
       />
 
-      <Card className="p-6 sm:p-10">
-        <div className="grid gap-8 lg:grid-cols-[3fr_7fr]">
-          <CategoryList
-            categories={categories.data ?? []}
-            isLoading={categories.isLoading}
-            isError={categories.isError}
-            error={categories.error}
-            onRetry={categories.refetch}
-            selectedId={selectedId}
-            onSelect={selectCategory}
-          />
+      <Card className="p-4 sm:p-6 lg:p-10">
+        <div className="grid gap-6 lg:grid-cols-[3fr_7fr] lg:gap-8">
+          <div className={mobileDetail ? 'hidden lg:block' : ''}>
+            <CategoryList
+              categories={categories.data ?? []}
+              isLoading={categories.isLoading}
+              isError={categories.isError}
+              error={categories.error}
+              onRetry={categories.refetch}
+              selectedId={selectedId}
+              onSelect={selectCategory}
+            />
+          </div>
 
-          <CategoryDetails
-            selected={selected}
-            trades={trades}
-            onEditCategory={openEditCategory}
-            onDeleteCategory={requestDeleteCategory}
-            onAddTrade={openNewTrade}
-            onEditTrade={openEditTrade}
-            onDeleteTrade={requestDeleteTrade}
-          />
+          <div className={!mobileDetail ? 'hidden lg:block' : ''}>
+            <CategoryDetails
+              selected={selected}
+              trades={trades}
+              onEditCategory={openEditCategory}
+              onDeleteCategory={requestDeleteCategory}
+              onAddTrade={openNewTrade}
+              onEditTrade={openEditTrade}
+              onDeleteTrade={requestDeleteTrade}
+              onBack={() => setMobileDetail(false)}
+            />
+          </div>
         </div>
 
         {/* Bannière conseil */}
-        <div className="mt-8 flex items-center gap-5 overflow-hidden rounded-panel border border-brand-600/15 bg-brand-50 p-6 sm:gap-6 sm:p-8">
+        <div className="mt-6 flex items-start gap-4 overflow-hidden rounded-panel border border-brand-600/15 bg-brand-50 p-4 sm:mt-8 sm:items-center sm:gap-6 sm:p-8">
           <span
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white shadow-md shadow-brand-600/25"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white shadow-md shadow-brand-600/25 sm:size-12"
             aria-hidden="true"
           >
-            <Lightbulb className="size-6" />
+            <Lightbulb className="size-5 sm:size-6" />
           </span>
           <div className="min-w-0 flex-1">
             <h2 className="text-sm font-semibold text-brand-900">Conseil</h2>

@@ -28,8 +28,8 @@ export default function AdminLayout() {
 
   return (
     <div className="min-h-screen lg:flex">
-      {/* Barre latérale — fixe à partir de lg, tiroir en dessous */}
-      <div className="hidden lg:block">
+      {/* Desktop : rail sticky plein viewport */}
+      <div className="hidden shrink-0 lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-y-auto">
         <Sidebar />
       </div>
 
@@ -40,7 +40,7 @@ export default function AdminLayout() {
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <aside className="relative flex h-full w-64">
+          <aside className="relative flex h-full w-[min(18rem,85vw)] max-w-xs shadow-2xl">
             <Sidebar onNavigate={() => setMobileOpen(false)} />
             <button
               type="button"
@@ -55,20 +55,28 @@ export default function AdminLayout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 sm:px-6">
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
-            aria-label="Ouvrir le menu"
-          >
-            <Menu className="size-5" aria-hidden="true" />
-          </button>
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur sm:gap-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+              aria-label="Ouvrir le menu"
+            >
+              <Menu className="size-5" aria-hidden="true" />
+            </button>
+            <div className="flex min-w-0 items-center gap-2 lg:hidden">
+              <img src="/logo.png" alt="" className="size-7 object-contain" />
+              <span className="truncate text-sm font-bold tracking-tight text-slate-900">
+                L-ARTIS
+              </span>
+            </div>
+          </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-slate-900">{fullName(user)}</p>
-              <p className="text-xs text-slate-500">{user?.email}</p>
+              <p className="max-w-[14rem] truncate text-xs text-slate-500">{user?.email}</p>
             </div>
             <span className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-semibold text-white shadow-sm ring-2 ring-brand-100">
               {initials(user)}
@@ -86,7 +94,7 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        <main className="flex-1 bg-surface p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 bg-surface p-3 sm:p-6 lg:p-8">
           <div className="mx-auto w-full max-w-7xl">
             <Outlet />
             <footer className="mt-10 pb-2 text-center text-xs text-slate-400">

@@ -114,21 +114,23 @@ export function Card({ className = '', children }) {
 
 export function PageHeader({ title, description, actions, icon: Icon }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div className="flex items-center gap-4">
+    <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+      <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
         {Icon && (
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-            <Icon className="size-6" aria-hidden="true" />
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 sm:size-12">
+            <Icon className="size-5 sm:size-6" aria-hidden="true" />
           </span>
         )}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             {title}
           </h1>
-          {description && <p className="mt-1.5 text-sm text-slate-500">{description}</p>}
+          {description && (
+            <p className="mt-1 text-sm leading-relaxed text-slate-500 sm:mt-1.5">{description}</p>
+          )}
         </div>
       </div>
-      {actions}
+      {actions ? <div className="w-full sm:w-auto">{actions}</div> : null}
     </div>
   );
 }
@@ -231,27 +233,42 @@ export function Select({ className = '', children, ...props }) {
 /* Tableau                                                             */
 /* ------------------------------------------------------------------ */
 
-export function DataTable({ headers, children }) {
+/**
+ * Tableau desktop + liste cartes mobile.
+ * `mobile` : contenu rendu sous `md` (cartes). Sans `mobile`, le tableau
+ * reste scrollable horizontalement partout.
+ */
+export function DataTable({ headers, children, mobile }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[44rem] text-left text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50/80">
-          <tr>
-            {headers.map((header) => (
-              <th
-                key={header.key ?? header.label}
-                scope="col"
-                className={`px-5 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 ${header.className ?? ''}`}
-              >
-                {header.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">{children}</tbody>
-      </table>
-    </div>
+    <>
+      {mobile ? (
+        <div className="divide-y divide-slate-100 md:hidden">{mobile}</div>
+      ) : null}
+      <div className={`overflow-x-auto ${mobile ? 'hidden md:block' : ''}`}>
+        <table className="w-full min-w-[44rem] text-left text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50/80">
+            <tr>
+              {headers.map((header) => (
+                <th
+                  key={header.key ?? header.label}
+                  scope="col"
+                  className={`px-4 py-3.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 lg:px-5 ${header.className ?? ''}`}
+                >
+                  {header.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">{children}</tbody>
+        </table>
+      </div>
+    </>
   );
+}
+
+/** Carte d'une ligne de liste (vue mobile). */
+export function ListCard({ children, className = '' }) {
+  return <article className={`flex flex-col gap-3 p-4 ${className}`}>{children}</article>;
 }
 
 /** Numéros de pages fenêtrés : 1 … (page-1 page page+1) … total. */
@@ -271,11 +288,13 @@ export function Pagination({ page, totalPages, totalItems, onChange }) {
   if (!totalItems) return null;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-5 py-4">
-      <p className="text-sm text-slate-500">
-        Page {page} sur {totalPages} — {totalItems} résultat{totalItems > 1 ? 's' : ''}
+    <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:px-5">
+      <p className="text-center text-sm text-slate-500 sm:text-left">
+        Page {page}/{totalPages}
+        <span className="text-slate-300"> · </span>
+        {totalItems} résultat{totalItems > 1 ? 's' : ''}
       </p>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-center gap-1.5">
         <Button
           variant="secondary"
           size="sm"
@@ -284,7 +303,7 @@ export function Pagination({ page, totalPages, totalItems, onChange }) {
           aria-label="Page précédente"
         >
           <ChevronLeft className="size-4" aria-hidden="true" />
-          Précédent
+          <span className="hidden sm:inline">Précédent</span>
         </Button>
         <div className="hidden items-center gap-1.5 sm:flex">
           {getPageItems(page, totalPages).map((item, index) =>
@@ -314,7 +333,7 @@ export function Pagination({ page, totalPages, totalItems, onChange }) {
           disabled={page >= totalPages}
           aria-label="Page suivante"
         >
-          Suivant
+          <span className="hidden sm:inline">Suivant</span>
           <ChevronRight className="size-4" aria-hidden="true" />
         </Button>
       </div>
@@ -348,15 +367,15 @@ export function Modal({ open, onClose, title, description, children }) {
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="w-full max-w-lg rounded-panel bg-white shadow-pop"
+            className="flex max-h-[min(92vh,40rem)] w-full max-w-lg flex-col overflow-hidden rounded-panel bg-white shadow-pop"
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
-              <div>
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-5">
+              <div className="min-w-0">
                 <h2 className="font-semibold text-slate-900">{title}</h2>
                 {description && <p className="mt-0.5 text-sm text-slate-500">{description}</p>}
               </div>
@@ -369,7 +388,7 @@ export function Modal({ open, onClose, title, description, children }) {
                 <X className="size-5" aria-hidden="true" />
               </button>
             </div>
-            <div className="px-5 py-4">{children}</div>
+            <div className="overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
           </motion.div>
         </motion.div>
       )}

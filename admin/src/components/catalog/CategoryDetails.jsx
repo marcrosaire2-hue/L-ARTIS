@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Pencil, Plus, Tags, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, Tags, Trash2 } from 'lucide-react';
 import { Badge, Button, Card, EmptyState, ErrorState, Spinner } from '../ui';
 import { errorMessage, formatNumber } from '../../lib/format';
 import SectionTitle from './SectionTitle';
@@ -14,6 +14,7 @@ function CategoryDetails({
   onAddTrade,
   onEditTrade,
   onDeleteTrade,
+  onBack,
 }) {
   if (!selected) {
     return (
@@ -31,12 +32,23 @@ function CategoryDetails({
 
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-7 sm:p-8">
-        <div className="flex min-w-0 items-start gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-4 sm:p-7 lg:p-8">
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          {onBack && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1 size-9 shrink-0 rounded-control p-0 lg:hidden"
+              onClick={onBack}
+              aria-label="Retour aux catégories"
+            >
+              <ArrowLeft className="size-4" aria-hidden="true" />
+            </Button>
+          )}
           <CatalogImage image={selected.image} icon={selected.icon} variant="lg" tone="brand" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
                 {selected.name}
               </h2>
               <Badge tone={selected.isActive === false ? 'slate' : 'green'}>
@@ -50,27 +62,28 @@ function CategoryDetails({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2.5">
-          <Button variant="secondary" onClick={() => onEditCategory(selected)}>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:gap-2.5">
+          <Button variant="secondary" size="sm" onClick={() => onEditCategory(selected)}>
             <Pencil className="size-3.5" aria-hidden="true" />
             Modifier
           </Button>
           <Button
             variant="ghost"
+            size="sm"
             className="hover:bg-red-50 hover:text-red-600"
             onClick={() => onDeleteCategory(selected)}
           >
             <Trash2 className="size-3.5" aria-hidden="true" />
             Supprimer
           </Button>
-          <Button onClick={onAddTrade} className="shadow-md shadow-brand-600/20">
+          <Button onClick={onAddTrade} size="sm" className="shadow-md shadow-brand-600/20">
             <Plus className="size-4" aria-hidden="true" />
             Ajouter un métier
           </Button>
         </div>
       </div>
 
-      <div className="p-7 sm:p-8">
+      <div className="p-4 sm:p-7 lg:p-8">
         <div className="mb-5">
           <SectionTitle
             title="Métiers"
