@@ -27,6 +27,7 @@ import {
   useListTradesQuery,
 } from '../../src/features/catalog/catalog.api';
 import { cleanParams, errorMessage } from '../../src/lib/format';
+import { getBeninDepartments } from '../../src/lib/beninGeography';
 import { colors, radius, spacing, typography } from '../../src/lib/theme';
 
 function useInitialFilters(params) {
@@ -67,7 +68,11 @@ export default function SearchScreen() {
   };
 
   const { data: categories } = useListCategoriesQuery();
-  const { data: departments } = useListDepartmentsQuery();
+  const { data: departmentsFromApi } = useListDepartmentsQuery();
+  const departments =
+    Array.isArray(departmentsFromApi) && departmentsFromApi.length > 0
+      ? departmentsFromApi
+      : getBeninDepartments();
   const { data: trades } = useListTradesQuery(
     { categoryId: filters.category },
     { skip: !filters.category }

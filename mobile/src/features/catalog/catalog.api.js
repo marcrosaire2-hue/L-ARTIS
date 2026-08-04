@@ -1,4 +1,5 @@
 import { api, unwrapData } from '../../store/api';
+import { getBeninDepartments, getBeninDistricts } from '../../lib/beninGeography';
 
 export const catalogApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -14,11 +15,19 @@ export const catalogApi = api.injectEndpoints({
     // Géographie du Bénin : départements -> communes -> quartiers
     listDepartments: builder.query({
       query: () => '/locations',
-      transformResponse: unwrapData,
+      transformResponse: (response) => {
+        const data = unwrapData(response);
+        if (Array.isArray(data) && data.length > 0) return data;
+        return getBeninDepartments();
+      },
     }),
     listDistricts: builder.query({
       query: (commune) => ({ url: '/locations/districts', params: { commune } }),
-      transformResponse: unwrapData,
+      transformResponse: (response, _meta, commune) => {
+        const data = unwrapData(response);
+        if (Array.isArray(data) && data.length > 0) return data;
+        return getBeninDistricts(commune);
+      },
     }),
   }),
 });

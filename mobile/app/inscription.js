@@ -14,6 +14,7 @@ import {
 } from '../src/features/catalog/catalog.api';
 import { credentialsReceived } from '../src/features/auth/authSlice';
 import { BENIN_PHONE_HINT, errorMessage, isBeninPhone } from '../src/lib/format';
+import { getBeninDepartments, getBeninDistricts } from '../src/lib/beninGeography';
 import { colors, radius, spacing, TOUCH_TARGET, typography } from '../src/lib/theme';
 
 const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -29,7 +30,7 @@ export default function RegisterScreen() {
 
   const [registerUser, { isLoading: isRegistering }] = useRegisterMutation();
   const [login, { isLoading: isLoggingIn }] = useLoginMutation();
-  const { data: departments } = useListDepartmentsQuery();
+  const { data: departmentsFromApi } = useListDepartmentsQuery();
   const { data: categories } = useListCategoriesQuery();
 
   const [role, setRole] = useState(initialRole);
@@ -49,11 +50,22 @@ export default function RegisterScreen() {
   const [fieldError, setFieldError] = useState({});
 
   const { data: tradesPage } = useListTradesQuery({ categoryId }, { skip: !categoryId });
-  const { data: districts } = useListDistrictsQuery(commune, { skip: !commune });
+  const { data: districtsFromApi } = useListDistrictsQuery(commune, { skip: !commune });
+
+  const departments = useMemo(() => {
+    if (Array.isArray(departmentsFromApi) && departmentsFromApi.length > 0) return departmentsFromApi;
+    return getBeninDepartments();
+  }, [departmentsFromApi]);
+
   const communes = useMemo(
-    () => (departments ?? []).find((entry) => entry.department === department)?.communes ?? [],
+    () => departments.find((entry) => entry.department === department)?.communes ?? [],
     [departments, department]
   );
+
+  const districts = useMemo(() => {
+    if (Array.isArray(districtsFromApi) && districtsFromApi.length > 0) return districtsFromApi;
+    return getBeninDistricts(commune);
+  }, [districtsFromApi, commune]);
 
   const isLoading = isRegistering || isLoggingIn;
   const tradeItems = tradesPage?.items ?? [];
