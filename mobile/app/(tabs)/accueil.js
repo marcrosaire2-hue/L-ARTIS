@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { ArtisanCard } from '../../src/components/ArtisanCard';
+import { CatalogVisual } from '../../src/components/CatalogVisual';
 import { Button, EmptyState } from '../../src/components/ui';
 import { useSearchArtisansQuery } from '../../src/features/artisans/artisans.api';
 import { useListCategoriesQuery, useListDepartmentsQuery } from '../../src/features/catalog/catalog.api';
@@ -107,6 +108,7 @@ export default function HomeScreen() {
               onPress={() => goSearch({ category: category._id })}
               style={({ pressed }) => [styles.catCard, pressed && { opacity: 0.9 }]}
             >
+              <CatalogVisual image={category.image} icon={category.icon} size="md" />
               <Text style={styles.catName} numberOfLines={2}>
                 {category.name}
               </Text>
@@ -218,9 +220,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
+    gap: spacing.sm,
   },
   catName: { ...typography.body, fontWeight: '700', fontSize: 15 },
-  catMeta: { ...typography.small, marginTop: 4 },
+  catMeta: { ...typography.small, marginTop: 0 },
   list: { gap: spacing.md, marginBottom: spacing.xl },
   cta: {
     backgroundColor: colors.navy,

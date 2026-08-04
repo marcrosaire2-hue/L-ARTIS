@@ -2,6 +2,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { formatPrice, initials, mediaUrl, PRICE_UNITS } from '../lib/format';
 import { colors, radius, spacing, typography } from '../lib/theme';
+import { CatalogVisual } from './CatalogVisual';
 import { Badge, Rating } from './ui';
 
 export function ArtisanCard({ artisan }) {
@@ -44,7 +45,12 @@ export function ArtisanCard({ artisan }) {
         {trades.length > 0 ? (
           <View style={styles.trades}>
             {trades.slice(0, 3).map((trade) => (
-              <Badge key={trade.id ?? trade._id ?? trade.name} label={trade.name} tone="green" />
+              <View key={trade.id ?? trade._id ?? trade.name} style={styles.tradePill}>
+                <CatalogVisual image={trade.image} icon={trade.icon} size={22} />
+                <Text style={styles.tradeName} numberOfLines={1}>
+                  {trade.name}
+                </Text>
+              </View>
             ))}
           </View>
         ) : null}
@@ -86,10 +92,35 @@ const styles = StyleSheet.create({
   },
   initials: { fontSize: 20, fontWeight: '700', color: colors.brandDark },
   body: { flex: 1, minWidth: 0 },
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   name: { ...typography.body, fontWeight: '700', flex: 1 },
   tagline: { ...typography.small, marginTop: 2 },
   trades: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8, alignItems: 'center' },
+  tradePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: '100%',
+    paddingRight: 8,
+    paddingVertical: 2,
+    paddingLeft: 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.brandSurface,
+    borderWidth: 1,
+    borderColor: 'rgba(0,176,80,0.2)',
+  },
+  tradeName: { fontSize: 12, fontWeight: '600', color: colors.brandDark, maxWidth: 110 },
+  meta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+    alignItems: 'center',
+  },
   metaText: { ...typography.small, color: colors.textMuted },
 });

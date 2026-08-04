@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { AuthShell } from '../src/components/AuthShell';
+import { CatalogVisual } from '../src/components/CatalogVisual';
 import { Button } from '../src/components/ui';
 import { useLoginMutation, useRegisterMutation } from '../src/features/auth/auth.api';
 import {
@@ -243,7 +244,7 @@ export default function RegisterScreen() {
                   value={categoryId}
                   options={(categories ?? []).map((category) => ({
                     value: category._id,
-                    label: `${category.icon ? `${category.icon} ` : ''}${category.name}`,
+                    label: category.name,
                   }))}
                   onChange={setCategoryId}
                 />
@@ -257,6 +258,7 @@ export default function RegisterScreen() {
                           onPress={() => toggleTrade(trade._id)}
                           style={[styles.tradeChip, active && styles.tradeChipActive]}
                         >
+                          <CatalogVisual image={trade.image} icon={trade.icon} size={28} />
                           <Text
                             style={[styles.tradeChipText, active && styles.tradeChipTextActive]}
                           >
@@ -462,6 +464,9 @@ const styles = StyleSheet.create({
   optionTextActive: { color: colors.brandDark, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
   tradeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border,
@@ -469,9 +474,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     backgroundColor: colors.background,
   },
-  tradeChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
+  tradeChipActive: { backgroundColor: colors.brandSurface, borderColor: colors.brand },
   tradeChipText: { ...typography.small, fontWeight: '700', color: colors.text },
-  tradeChipTextActive: { color: '#ffffff' },
+  tradeChipTextActive: { color: colors.brandDark },
   warning: { ...typography.muted, color: '#92400e', backgroundColor: '#fffbeb', padding: spacing.md, borderRadius: radius.md },
   action: { marginTop: spacing.sm },
   link: { color: colors.brand, fontWeight: '700' },

@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtisanCard } from '../../src/components/ArtisanCard';
+import { CatalogVisual } from '../../src/components/CatalogVisual';
 import {
   AlertBox,
   Button,
@@ -197,6 +198,94 @@ export default function SearchScreen() {
         ]}
       />
 
+      {(categories ?? []).length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.catStrip}
+          style={styles.catStripWrap}
+        >
+          <Pressable
+            onPress={() => update({ category: '', trade: '' })}
+            style={[styles.catChip, !filters.category && styles.catChipActive]}
+          >
+            <View style={[styles.catChipIcon, !filters.category && styles.catChipIconActive]}>
+              <Text style={styles.catChipAll}>Tous</Text>
+            </View>
+            <Text
+              style={[styles.catChipLabel, !filters.category && styles.catChipLabelActive]}
+              numberOfLines={1}
+            >
+              Tout
+            </Text>
+          </Pressable>
+          {(categories ?? []).map((category) => {
+            const active = filters.category === category._id;
+            return (
+              <Pressable
+                key={category._id}
+                onPress={() =>
+                  update({
+                    category: active ? '' : category._id,
+                    trade: '',
+                  })
+                }
+                style={[styles.catChip, active && styles.catChipActive]}
+              >
+                <CatalogVisual
+                  image={category.image}
+                  icon={category.icon}
+                  size={44}
+                  style={active ? styles.catVisualActive : undefined}
+                />
+                <Text
+                  style={[styles.catChipLabel, active && styles.catChipLabelActive]}
+                  numberOfLines={1}
+                >
+                  {category.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+
+      {filters.category && (trades?.items?.length ?? 0) > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tradeStrip}
+          style={styles.tradeStripWrap}
+        >
+          <Pressable
+            onPress={() => update({ trade: '' })}
+            style={[styles.tradeChip, !filters.trade && styles.tradeChipActive]}
+          >
+            <Text style={[styles.tradeChipText, !filters.trade && styles.tradeChipTextActive]}>
+              Tous les métiers
+            </Text>
+          </Pressable>
+          {(trades?.items ?? []).map((trade) => {
+            const active = filters.trade === trade._id;
+            return (
+              <Pressable
+                key={trade._id}
+                onPress={() => update({ trade: active ? '' : trade._id })}
+                style={[styles.tradeChip, active && styles.tradeChipActive]}
+              >
+                <CatalogVisual image={trade.image} icon={trade.icon} size={28} />
+                <Text
+                  style={[styles.tradeChipText, active && styles.tradeChipTextActive]}
+                  numberOfLines={1}
+                >
+                  {trade.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
+
       {isLoading ? (
         <ActivityIndicator color={colors.brand} style={{ marginTop: spacing.xl }} />
       ) : isError ? (
@@ -268,6 +357,58 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   filterBtnText: { fontWeight: '700', color: colors.text, fontSize: 13 },
+  catStripWrap: { maxHeight: 92, marginBottom: spacing.sm },
+  catStrip: { gap: 10, paddingVertical: 4, paddingRight: spacing.md },
+  catChip: {
+    width: 76,
+    alignItems: 'center',
+    gap: 6,
+  },
+  catChipActive: { opacity: 1 },
+  catChipIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  catChipIconActive: {
+    backgroundColor: colors.brandSurface,
+    borderColor: colors.brand,
+  },
+  catChipAll: { fontSize: 11, fontWeight: '800', color: colors.textMuted },
+  catVisualActive: { borderColor: colors.brand, borderWidth: 2 },
+  catChipLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textAlign: 'center',
+    width: '100%',
+  },
+  catChipLabelActive: { color: colors.brandDark },
+  tradeStripWrap: { maxHeight: 48, marginBottom: spacing.sm },
+  tradeStrip: { gap: 8, paddingVertical: 2, paddingRight: spacing.md, alignItems: 'center' },
+  tradeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    maxWidth: 200,
+  },
+  tradeChipActive: {
+    backgroundColor: colors.brandSurface,
+    borderColor: colors.brand,
+  },
+  tradeChipText: { fontSize: 13, fontWeight: '600', color: colors.textMuted, flexShrink: 1 },
+  tradeChipTextActive: { color: colors.brandDark },
   filterLabel: { ...typography.small, fontWeight: '600', color: colors.textMuted, marginBottom: 6 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.md },
   checkbox: {

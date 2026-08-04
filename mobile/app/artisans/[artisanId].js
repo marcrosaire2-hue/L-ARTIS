@@ -21,6 +21,7 @@ import {
   ScreenHeader,
   TextField,
 } from '../../src/components/ui';
+import { CatalogVisual } from '../../src/components/CatalogVisual';
 import { useGetArtisanQuery } from '../../src/features/artisans/artisans.api';
 import {
   useAddFavoriteMutation,
@@ -292,7 +293,10 @@ export default function ArtisanDetailScreen() {
             <Text style={styles.sectionTitle}>Métiers</Text>
             <View style={styles.chips}>
               {artisan.trades.map((trade) => (
-                <Badge key={trade._id ?? trade.name} label={trade.name} tone="green" />
+                <View key={trade._id ?? trade.name} style={styles.tradeChip}>
+                  <CatalogVisual image={trade.image} icon={trade.icon} size={28} />
+                  <Text style={styles.tradeChipText}>{trade.name}</Text>
+                </View>
               ))}
               {(artisan.skills ?? []).map((skill) => (
                 <Badge key={skill} label={skill} tone="slate" />
@@ -418,6 +422,19 @@ const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   sectionTitle: { ...typography.heading, fontSize: 18, marginBottom: spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tradeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+    paddingRight: 10,
+    paddingLeft: 4,
+    borderRadius: radius.full,
+    backgroundColor: colors.brandSurface,
+    borderWidth: 1,
+    borderColor: 'rgba(0,176,80,0.2)',
+  },
+  tradeChipText: { fontSize: 13, fontWeight: '700', color: colors.brandDark },
   service: {
     backgroundColor: colors.background,
     borderRadius: radius.md,

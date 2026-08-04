@@ -169,7 +169,13 @@ async function searchArtisans({
               $map: {
                 input: '$trades',
                 as: 't',
-                in: { id: '$$t._id', name: '$$t.name', slug: '$$t.slug' },
+                in: {
+                  id: '$$t._id',
+                  name: '$$t.name',
+                  slug: '$$t.slug',
+                  icon: '$$t.icon',
+                  image: '$$t.image',
+                },
               },
             },
           },
@@ -201,7 +207,7 @@ async function searchArtisans({
 
 async function getPublicProfile(artisanId) {
   const artisan = await Artisan.findOne({ artisanId, status: 'validated' })
-    .populate('trades', 'name slug icon')
+    .populate('trades', 'name slug icon image')
     .lean();
 
   if (!artisan) throw new ApiError(404, 'Artisan introuvable ou non publié');
