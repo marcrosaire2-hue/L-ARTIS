@@ -400,8 +400,8 @@ export default function RegisterPage() {
                     </div>
 
                     <Field
-                      label="Ville / Quartier"
-                      hint="Facultatif — précisez votre ville, zone ou quartier pour que vos clients vous trouvent (ex. Godomey à Abomey-Calavi, Cadjehoun à Cotonou)."
+                      label="Arrondissement / Quartier"
+                      hint="Facultatif — arrondissement ou quartier (ex. Godomey à Abomey-Calavi, Cadjehoun ou Akpakpa à Cotonou)."
                       error={errors.district?.message}
                     >
                       <Select {...register('district')} disabled={!selectedCommune}>
