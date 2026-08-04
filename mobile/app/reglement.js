@@ -26,8 +26,8 @@ export default function TermsScreen() {
 
   const onAccept = async () => {
     try {
-      const updated = await acceptTerms().unwrap();
-      dispatch(userUpdated(updated));
+      const result = await acceptTerms().unwrap();
+      dispatch(userUpdated(result.user ?? result));
       if (user?.email && !user.isEmailVerified) {
         router.replace({
           pathname: '/verification-email',
