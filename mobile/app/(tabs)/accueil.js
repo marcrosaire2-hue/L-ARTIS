@@ -151,7 +151,7 @@ export default function HomeScreen() {
           <Button
             label="Créer ma fiche artisan"
             variant="secondary"
-            onPress={() => router.push('/inscription')}
+            onPress={() => router.push({ pathname: '/inscription', params: { role: 'artisan' } })}
             style={{ marginTop: spacing.md }}
           />
         </View>

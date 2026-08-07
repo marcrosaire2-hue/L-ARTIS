@@ -43,6 +43,18 @@ export default function AccountPage() {
             )}
           </dl>
 
+          <nav className="mt-6 flex flex-col gap-2 border-t border-slate-100 pt-4 text-sm">
+            <Link to="/mentions-legales" className="text-brand-700 hover:underline">
+              Mentions légales
+            </Link>
+            <Link
+              to={`/reglement/${user?.role === 'artisan' ? 'artisan' : 'client'}`}
+              className="text-brand-700 hover:underline"
+            >
+              Règlement {user?.role === 'artisan' ? 'artisans' : 'clients'}
+            </Link>
+          </nav>
+
           {!user?.isEmailVerified && (
             <div className="mt-6">
               <Alert tone="amber">

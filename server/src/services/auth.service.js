@@ -34,7 +34,7 @@ const {
   resetPasswordTemplate,
   welcomeTemplate,
 } = require('../helpers/email/templates');
-const { ROLES, ACCOUNT_STATUS } = require('../constants');
+const { ROLES, ACCOUNT_STATUS, TERMS_VERSION } = require('../constants');
 const { normalizePhone, looksLikeEmail } = require('../utils/phone');
 
 const REFRESH_COOKIE = 'refresh_token';
@@ -166,25 +166,45 @@ async function register({ email, password, firstName, lastName, phone, role, art
     accountStatus: ACCOUNT_STATUS.ACTIVE,
   });
 
-  if (role === ROLES.ARTISAN) {
-    if (!artisanData || !artisanData.businessName) {
-      await User.deleteOne({ _id: user._id });
-      throw new ApiError(400, 'Le nom commercial est obligatoire pour les artisans');
-    }
-    const artisan = await createArtisanProfile(user, artisanData);
+  // Le compte et son profil vont de pair : un utilisateur artisan sans fiche
+  // n'a pas d'espace de travail, et le numéro resterait pris — l'artisan ne
+  // pourrait même pas se réinscrire. En cas d'échec, on défait la création.
+  try {
+    if (role === ROLES.ARTISAN) {
+      if (!artisanData || !artisanData.businessName) {
+        throw new ApiError(400, 'Le nom commercial est obligatoire pour les artisans');
+      }
+      const artisan = await createArtisanProfile(user, artisanData);
 
-    // Notifie les administrateurs : profil en attente de validation
-    await notifyAdmins(
-      'artisan_validated',
-      'Nouvel artisan à valider',
-      `${artisan.displayName} a soumis son profil`,
-      { artisanId: String(artisan._id), url: '/admin/artisans' }
-    );
-  } else {
-    await Client.create({ userId: user._id });
+      // Notifie les administrateurs : profil en attente de validation.
+      // Accessoire au regard de l'inscription : son échec ne doit pas la faire
+      // échouer, le profil reste visible dans la file d'attente admin.
+      await notifyAdmins(
+        'artisan_validated',
+        'Nouvel artisan à valider',
+        `${artisan.displayName} a soumis son profil`,
+        { artisanId: String(artisan._id), url: '/admin/artisans' }
+      ).catch((error) => {
+        logger.error(`Notification admin impossible (artisan ${artisan._id}) : ${error.message}`);
+      });
+    } else {
+      await Client.create({ userId: user._id });
+    }
+  } catch (error) {
+    await User.deleteOne({ _id: user._id });
+    throw error;
   }
 
-  const verificationCode = await sendVerificationEmail(user);
+  // L'envoi du code ne conditionne pas la création du compte : un SMTP
+  // indisponible ferait échouer l'inscription APRÈS création, et la reprise
+  // buterait ensuite sur « ce numéro existe déjà ». Le code est renvoyable
+  // depuis l'écran de vérification (/auth/resend-verification).
+  let verificationCode = null;
+  try {
+    verificationCode = await sendVerificationEmail(user);
+  } catch (error) {
+    logger.error(`Code de vérification non envoyé à ${user.email} : ${error.message}`);
+  }
 
   logger.info(`Nouvel utilisateur : ${user.phone} (${role})`);
   return { user, verificationCode };
@@ -500,6 +520,25 @@ async function findUserByEmail(email) {
   return User.findOne({ email });
 }
 
+/**
+ * Enregistre l'acceptation du règlement (clients ou artisans) après lecture.
+ * Obligatoire avant de poursuivre le parcours post-inscription.
+ */
+async function acceptTerms(userId) {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(404, 'Utilisateur introuvable');
+  if (user.role === ROLES.ADMIN) {
+    throw new ApiError(400, 'Non applicable aux administrateurs');
+  }
+
+  user.termsAcceptedAt = new Date();
+  user.termsVersion = TERMS_VERSION;
+  await user.save();
+
+  logger.info(`Règlement accepté : ${user.phone || user.email} (v${TERMS_VERSION})`);
+  return user;
+}
+
 module.exports = {
   register,
   login,
@@ -511,6 +550,7 @@ module.exports = {
   resetPassword,
   changePassword,
   getMe,
+  acceptTerms,
   createSession,
   revokeAllSessions,
   sendVerificationEmail,

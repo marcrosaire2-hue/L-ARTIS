@@ -27,12 +27,14 @@ const isNativeClient = (req) => req.get('x-client-type') === 'mobile';
 const register = catchAsync(async (req, res) => {
   const { user, verificationCode } = await authService.register(req.body);
 
-  const data = { user: user.toPublicJSON() };
+  const data = { user: user.toPublicJSON(), emailSent: Boolean(verificationCode) };
   if (!env.isProduction) data.dev = { verificationCode };
 
   res.status(201).json(
     ApiResponse.created(
-      'Inscription réussie. Un code de vérification a été envoyé par e-mail.',
+      verificationCode
+        ? 'Inscription réussie. Un code de vérification a été envoyé par e-mail.'
+        : "Inscription réussie. L'envoi du code a échoué : demandez-en un nouveau depuis l'écran de vérification.",
       data
     )
   );
@@ -187,6 +189,15 @@ const getMe = catchAsync(async (req, res) => {
   res.json(ApiResponse.ok('Profil récupéré', data));
 });
 
+const acceptTerms = catchAsync(async (req, res) => {
+  const user = await authService.acceptTerms(req.user._id);
+  res.json(
+    ApiResponse.ok('Règlement accepté.', {
+      user: user.toPublicJSON(),
+    })
+  );
+});
+
 module.exports = {
   register,
   login,
@@ -199,4 +210,5 @@ module.exports = {
   changePassword,
   getMe,
   deleteMe,
+  acceptTerms,
 };

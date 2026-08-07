@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# builds locaux (95 Mo : ne doit pas entrer dans le dépôt)
+*.apk
+*.aab

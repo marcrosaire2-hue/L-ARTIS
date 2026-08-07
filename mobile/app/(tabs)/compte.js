@@ -67,6 +67,31 @@ export default function AccountScreen() {
     );
   }
 
+  if (!user.termsAcceptedAt) {
+    return (
+      <View style={[styles.screen, styles.centered, { paddingTop: insets.top }]}>
+        <Text style={typography.heading}>Règlement à valider</Text>
+        <Text style={[typography.muted, { marginVertical: spacing.md, textAlign: 'center' }]}>
+          Avant d’accéder à votre compte, lisez et validez le règlement{' '}
+          {user.role === 'artisan' ? 'artisans' : 'clients'}.
+        </Text>
+        <Button
+          label="Lire et valider"
+          onPress={() =>
+            router.replace({
+              pathname: '/reglement',
+              params: {
+                audience: user.role === 'artisan' ? 'artisan' : 'client',
+                accept: '1',
+                email: user.email || '',
+              },
+            })
+          }
+        />
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.screen}
@@ -152,6 +177,30 @@ export default function AccountScreen() {
             <Text style={styles.chevron}>→</Text>
           </Pressable>
         ) : null}
+        <Pressable
+          onPress={() => router.push('/mentions-legales')}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
+        >
+          <Text style={styles.linkTitle}>Mentions légales</Text>
+          <Text style={styles.chevron}>→</Text>
+        </Pressable>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: '/reglement',
+              params: {
+                audience: user.role === 'artisan' ? 'artisan' : 'client',
+                force: '0',
+              },
+            })
+          }
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
+        >
+          <Text style={styles.linkTitle}>
+            Règlement {user.role === 'artisan' ? 'artisans' : 'clients'}
+          </Text>
+          <Text style={styles.chevron}>→</Text>
+        </Pressable>
       </View>
 
       <Button

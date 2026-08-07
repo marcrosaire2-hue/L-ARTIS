@@ -284,6 +284,27 @@ export default function ArtisanSpaceScreen() {
     );
   }
 
+  if (!user.termsAcceptedAt) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.lg }]}>
+        <ScreenHeader title="Espace artisan" onBack={() => router.back()} />
+        <AlertBox tone="amber">
+          Validez d’abord le règlement artisans pour accéder à votre espace.
+        </AlertBox>
+        <Button
+          label="Lire et valider le règlement"
+          onPress={() =>
+            router.replace({
+              pathname: '/reglement',
+              params: { audience: 'artisan', accept: '1', email: user.email || '' },
+            })
+          }
+          style={{ marginTop: spacing.md }}
+        />
+      </View>
+    );
+  }
+
   if (isLoading) {
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>

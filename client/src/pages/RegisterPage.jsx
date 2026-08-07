@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -151,29 +151,27 @@ function TradePicker({ value, onToggle, error }) {
   );
 }
 
-function SuccessScreen({ email, devCode, role }) {
+function SuccessScreen({ email, role }) {
   return (
     <Card className="p-8 text-center">
       <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
       <h1 className="mt-4 text-2xl font-bold text-slate-900">Compte créé</h1>
       <p className="mt-2 text-slate-600">
-        Un code à 6 chiffres a été envoyé à <strong>{email}</strong>. Saisissez-le pour
-        vérifier votre adresse.
+        Prochaine étape : lire et valider le règlement{' '}
+        {role === 'artisan' ? 'artisans' : 'clients'}, obligatoire selon le Code du numérique
+        au Bénin.
       </p>
       {role === 'artisan' && (
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800">
-          Ensuite, complétez votre fiche (photo, présentation, prestations) : elle sera
-          publiée après validation par notre équipe.
+          Ensuite, vérifiez votre e-mail puis complétez votre fiche : elle sera publiée après
+          validation par notre équipe.
         </p>
       )}
-      {devCode && (
-        <p className="mt-4 text-sm text-slate-500">
-          Environnement de développement — code :{' '}
-          <strong className="tracking-widest text-slate-800">{devCode}</strong>
-        </p>
-      )}
-      <Link to={`/verification-email?email=${encodeURIComponent(email)}`} className="mt-6 inline-block">
-        <Button>Saisir le code</Button>
+      <Link
+        to={`/reglement/${role}?accept=1&email=${encodeURIComponent(email)}`}
+        className="mt-6 inline-block"
+      >
+        <Button>Lire et valider le règlement</Button>
       </Link>
     </Card>
   );
@@ -183,6 +181,7 @@ export default function RegisterPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const role = searchParams.get('role') === 'artisan' ? 'artisan' : 'client';
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const [registerUser, { isLoading }] = useRegisterMutation();
   const [login] = useLoginMutation();
@@ -249,18 +248,17 @@ export default function RegisterPage() {
     };
 
     try {
-      const result = await registerUser(payload).unwrap();
-      setSuccess({
-        email: values.email.trim().toLowerCase(),
-        devCode: result?.dev?.verificationCode,
-      });
+      await registerUser(payload).unwrap();
+      const email = values.email.trim().toLowerCase();
 
-      // Connexion immédiate, puis saisie du code e-mail.
+      // Connexion immédiate, puis lecture / validation du règlement.
       try {
         const session = await login({ identifier: values.phone, password: values.password }).unwrap();
         dispatch(credentialsReceived(session));
+        navigate(`/reglement/${role}?accept=1&email=${encodeURIComponent(email)}`, { replace: true });
+        return;
       } catch {
-        /* l'écran de confirmation reste affiché */
+        setSuccess({ email });
       }
     } catch (error) {
       setFormError(errorMessage(error, "L'inscription a échoué."));
@@ -406,6 +404,28 @@ export default function RegisterPage() {
                 <Button type="submit" size="lg" loading={isLoading} className="mt-2">
                   Créer mon compte
                 </Button>
+
+                <p className="text-center text-xs leading-relaxed text-slate-500">
+                  En créant un compte, vous pourrez lire et devoir accepter le{' '}
+                  <Link
+                    to={`/reglement/${role}`}
+                    className="font-medium text-brand-700 hover:underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    règlement {role === 'artisan' ? 'artisans' : 'clients'}
+                  </Link>{' '}
+                  ainsi que les{' '}
+                  <Link
+                    to="/mentions-legales"
+                    className="font-medium text-brand-700 hover:underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    mentions légales
+                  </Link>
+                  , conformément au Code du numérique au Bénin.
+                </p>
 
                 <p className="text-center text-sm text-slate-600">
                   Déjà inscrit ?{' '}

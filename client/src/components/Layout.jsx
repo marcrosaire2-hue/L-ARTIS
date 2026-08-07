@@ -179,6 +179,15 @@ function Footer() {
           <Link to="/inscription?role=artisan" className="hover:text-slate-900">
             Devenir artisan
           </Link>
+          <Link to="/mentions-legales" className="hover:text-slate-900">
+            Mentions légales
+          </Link>
+          <Link to="/reglement/client" className="hover:text-slate-900">
+            Règlement clients
+          </Link>
+          <Link to="/reglement/artisan" className="hover:text-slate-900">
+            Règlement artisans
+          </Link>
         </nav>
       </Container>
     </footer>

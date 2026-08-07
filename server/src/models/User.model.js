@@ -80,6 +80,9 @@ const userSchema = new mongoose.Schema(
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
     locale: { type: String, default: 'fr', enum: ['fr', 'en'] },
+    // Acceptation du règlement (Code du numérique) — obligatoire après inscription.
+    termsAcceptedAt: { type: Date, default: null },
+    termsVersion: { type: String, default: '' },
     lastLoginAt: { type: Date },
     suspendedAt: { type: Date },
     suspensionReason: { type: String, default: '' },
@@ -128,6 +131,8 @@ userSchema.methods.toPublicJSON = function () {
     accountStatus: this.accountStatus,
     isEmailVerified: this.isEmailVerified,
     locale: this.locale,
+    termsAcceptedAt: this.termsAcceptedAt,
+    termsVersion: this.termsVersion,
     createdAt: this.createdAt,
   };
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { AuthShell } from '../src/components/AuthShell';
 import { Button } from '../src/components/ui';
@@ -13,9 +13,14 @@ import { colors, radius, spacing, TOUCH_TARGET, typography } from '../src/lib/th
 export default function LoginScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
+  const params = useLocalSearchParams();
   const [login, { isLoading }] = useLoginMutation();
 
-  const [identifier, setIdentifier] = useState('');
+  // Pré-rempli quand on arrive d'une inscription dont la connexion
+  // automatique a échoué : l'utilisateur n'a pas à retaper son numéro.
+  const [identifier, setIdentifier] = useState(
+    typeof params.identifier === 'string' ? params.identifier : ''
+  );
   const [password, setPassword] = useState('');
   const [visible, setVisible] = useState(false);
   const [error, setError] = useState(null);
@@ -28,6 +33,22 @@ export default function LoginScreen() {
     try {
       const session = await login({ identifier: identifier.trim(), password }).unwrap();
       dispatch(credentialsReceived(session));
+
+      // Inscription interrompue avant la validation du règlement : on reprend
+      // le parcours là où il s'est arrêté plutôt que d'ouvrir une app dont
+      // toutes les sections sont verrouillées.
+      const account = session.user;
+      if (account && account.role !== 'admin' && !account.termsAcceptedAt) {
+        router.replace({
+          pathname: '/reglement',
+          params: {
+            audience: account.role === 'artisan' ? 'artisan' : 'client',
+            accept: '1',
+            email: account.email || '',
+          },
+        });
+        return;
+      }
       router.replace('/accueil');
     } catch (loginError) {
       setError(errorMessage(loginError, 'Connexion impossible.'));

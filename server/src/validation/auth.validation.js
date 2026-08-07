@@ -73,10 +73,12 @@ const authValidation = {
       .optional()
       .isString()
       .isLength({ max: 60 }),
+    // Au moins un métier : sans lui, la fiche n'apparaît dans aucune
+    // recherche — l'artisan serait inscrit mais introuvable.
     body('artisanData.trades')
-      .optional()
-      .isArray({ max: 20 })
-      .withMessage('Maximum 20 métiers')
+      .if(body('role').equals(ROLES.ARTISAN))
+      .isArray({ min: 1, max: 20 })
+      .withMessage('Choisissez entre 1 et 20 métiers')
       .custom((trades) => trades.every((t) => REGEX.OBJECT_ID.test(t)))
       .withMessage('Identifiants de métiers invalides'),
     body('artisanData.skills')

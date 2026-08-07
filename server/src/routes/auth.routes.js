@@ -32,6 +32,7 @@ router.post('/forgot-password', authLimiter, validate(authValidation.forgotPassw
 router.post('/reset-password', authLimiter, validate(authValidation.resetPassword), authController.resetPassword);
 router.post('/change-password', protect, validate(authValidation.changePassword), authController.changePassword);
 router.get('/me', protect, authController.getMe);
+router.post('/accept-terms', protect, authController.acceptTerms);
 // Suppression définitive par le titulaire, confirmée par son mot de passe
 router.delete('/me', protect, validate(authValidation.deleteAccount), authController.deleteMe);
 

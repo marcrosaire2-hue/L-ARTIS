@@ -21,6 +21,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import AccountPage from './pages/AccountPage';
 import ArtisanSpacePage from './pages/ArtisanSpacePage';
+import MentionsLegalesPage from './pages/MentionsLegalesPage';
+import ReglementPage from './pages/ReglementPage';
 
 /**
  * Le serveur révoque toutes les sessions s'il voit un refresh token rejoué.
@@ -55,6 +57,17 @@ function RequireAuth({ role, children }) {
   if (role && user?.role !== role) {
     return <Navigate to="/compte" replace />;
   }
+  // Règlement non encore accepté → protocole de lecture / validation.
+  if (user && user.role !== 'admin' && !user.termsAcceptedAt) {
+    const audience = user.role === 'artisan' ? 'artisan' : 'client';
+    return (
+      <Navigate
+        to={`/reglement/${audience}?accept=1`}
+        state={{ from: location }}
+        replace
+      />
+    );
+  }
   return children;
 }
 
@@ -78,6 +91,8 @@ export default function App() {
         <Route path="verification-email" element={<VerifyEmailPage />} />
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+        <Route path="mentions-legales" element={<MentionsLegalesPage />} />
+        <Route path="reglement/:audience" element={<ReglementPage />} />
 
         <Route
           path="compte"
