@@ -17,6 +17,7 @@ import { Button, EmptyState } from '../../src/components/ui';
 import { useSearchArtisansQuery } from '../../src/features/artisans/artisans.api';
 import { useListCategoriesQuery, useListDepartmentsQuery } from '../../src/features/catalog/catalog.api';
 import { selectUser } from '../../src/features/auth/authSlice';
+import { getBeninDepartments } from '../../src/lib/beninGeography';
 import { colors, radius, spacing, typography } from '../../src/lib/theme';
 
 export default function HomeScreen() {
@@ -27,13 +28,17 @@ export default function HomeScreen() {
   const [commune, setCommune] = useState('');
 
   const { data: categories, isLoading: loadingCats } = useListCategoriesQuery();
-  const { data: departments } = useListDepartmentsQuery();
+  const { data: departmentsFromApi } = useListDepartmentsQuery();
+  const departments =
+    Array.isArray(departmentsFromApi) && departmentsFromApi.length > 0
+      ? departmentsFromApi
+      : getBeninDepartments();
   const { data: featured, isLoading: loadingFeatured } = useSearchArtisansQuery({
     sort: 'rating',
     limit: 6,
   });
 
-  const communes = (departments ?? []).flatMap((d) => d.communes);
+  const communes = departments.flatMap((d) => d.communes);
   const artisans = featured?.items ?? [];
 
   const goSearch = (extra = {}) => {

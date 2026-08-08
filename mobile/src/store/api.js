@@ -101,6 +101,9 @@ export const api = createApi({
     'Favorite',
     'Review',
     'Notification',
+    'Conversation',
+    'Message',
+    'Subscription',
   ],
   endpoints: () => ({}),
 });

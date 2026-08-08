@@ -49,7 +49,9 @@ export default function LoginScreen() {
         });
         return;
       }
-      router.replace('/accueil');
+      // L'écran d'attente bascule seul vers l'espace artisan une fois le
+      // profil validé : il ne retient pas un artisan déjà publié.
+      router.replace(account?.role === 'artisan' ? '/attente-validation' : '/accueil');
     } catch (loginError) {
       setError(errorMessage(loginError, 'Connexion impossible.'));
     }

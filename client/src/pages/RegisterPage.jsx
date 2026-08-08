@@ -163,8 +163,7 @@ function SuccessScreen({ email, role }) {
       </p>
       {role === 'artisan' && (
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800">
-          Ensuite, vérifiez votre e-mail puis complétez votre fiche : elle sera publiée après
-          validation par notre équipe.
+          Ensuite, complétez votre fiche : elle sera publiée après validation par notre équipe.
         </p>
       )}
       <Link
@@ -302,6 +301,15 @@ export default function RegisterPage() {
                 </div>
 
                 <Field
+                  label="Adresse e-mail"
+                  required
+                  error={errors.email?.message}
+                  hint="Un code de vérification vous sera envoyé à cette adresse."
+                >
+                  <Input type="email" autoComplete="email" {...register('email')} />
+                </Field>
+
+                <Field
                   label="Numéro de téléphone"
                   required
                   error={errors.phone?.message}
@@ -313,15 +321,6 @@ export default function RegisterPage() {
                     placeholder="01 47 88 01 43"
                     {...register('phone')}
                   />
-                </Field>
-
-                <Field
-                  label="Adresse e-mail"
-                  required
-                  error={errors.email?.message}
-                  hint="Obligatoire pour vérifier votre compte et récupérer votre mot de passe."
-                >
-                  <Input type="email" autoComplete="email" {...register('email')} />
                 </Field>
 
                 <Field
@@ -392,8 +391,8 @@ export default function RegisterPage() {
                     </div>
 
                     <Field
-                      label="Ville / Quartier"
-                      hint="Facultatif — précisez votre ville, zone ou quartier pour que vos clients vous trouvent (ex. Godomey à Abomey-Calavi, Cadjehoun à Cotonou)."
+                      label="Arrondissement / Quartier"
+                      hint="Facultatif — arrondissement ou quartier (ex. Godomey à Abomey-Calavi, Cadjehoun ou Akpakpa à Cotonou)."
                       error={errors.district?.message}
                     >
                       <Select {...register('district')} disabled={!selectedCommune}>

@@ -3,6 +3,7 @@
  * Compteurs de non-lus par participant pour l'UI.
  */
 const mongoose = require('mongoose');
+const paginatePlugin = require('./plugins/paginate.plugin');
 
 const participantSchema = new mongoose.Schema(
   {
@@ -52,5 +53,7 @@ conversationSchema.index(
 conversationSchema.index(
   { 'participants.user': 1, lastMessageAt: -1 }
 );
+
+paginatePlugin(conversationSchema);
 
 module.exports = mongoose.model('Conversation', conversationSchema);

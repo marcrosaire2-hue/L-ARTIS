@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
@@ -102,6 +102,31 @@ function ChecklistItem({ done, optional, title, description, children }) {
         </View>
       </View>
       <View style={{ marginTop: spacing.md }}>{children}</View>
+    </View>
+  );
+}
+
+function LegalForm({ artisan, onSave, saving }) {
+  const [rccm, setRccm] = useState(artisan.legal?.rccm ?? '');
+  const [ifu, setIfu] = useState(artisan.legal?.ifu ?? '');
+  const [saved, setSaved] = useState(false);
+
+  const submit = async () => {
+    setSaved(false);
+    await onSave({ legal: { rccm: rccm.trim(), ifu: ifu.trim() } });
+    setSaved(true);
+  };
+
+  return (
+    <View>
+      <Field label="RCCM" hint="Registre du Commerce et du Crédit Mobilier — facultatif mais recommandé.">
+        <TextField value={rccm} onChangeText={setRccm} maxLength={60} placeholder="RB/COT/…" />
+      </Field>
+      <Field label="IFU" hint="Identifiant Fiscal Unique — facultatif.">
+        <TextField value={ifu} onChangeText={setIfu} maxLength={40} placeholder="IFU…" />
+      </Field>
+      <Button label="Enregistrer" loading={saving} onPress={submit} />
+      {saved ? <Text style={styles.saved}>Enregistré</Text> : null}
     </View>
   );
 }
@@ -278,6 +303,17 @@ export default function ArtisanSpaceScreen() {
   const user = useSelector(selectUser);
   const isArtisan = user?.role === 'artisan';
 
+  // Filet de sécurité : un artisan arrivé ici sans avoir validé le règlement
+  // repart le lire, l'acceptation conditionnant la publication de sa fiche.
+  useEffect(() => {
+    if (isArtisan && !user.termsAcceptedAt) {
+      router.replace({
+        pathname: '/reglement',
+        params: { accept: '1', audience: 'artisan' },
+      });
+    }
+  }, [isArtisan, user, router]);
+
   const { data, isLoading, isError, error } = useGetMyArtisanQuery(undefined, { skip: !isArtisan });
   const { data: services } = useListMyServicesQuery(undefined, { skip: !isArtisan });
   const { data: stats } = useGetMyStatsQuery(undefined, { skip: !isArtisan });
@@ -355,11 +391,16 @@ export default function ArtisanSpaceScreen() {
         subtitle="Votre espace artisan"
         onBack={() => router.back()}
         right={
-          isPublished ? (
-            <Pressable onPress={() => router.push(`/artisans/${artisan.artisanId}`)}>
-              <Text style={styles.publicLink}>Voir fiche</Text>
+          <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
+            {isPublished ? (
+              <Pressable onPress={() => router.push(`/artisans/${artisan.artisanId}`)}>
+                <Text style={styles.publicLink}>Voir fiche</Text>
+              </Pressable>
+            ) : null}
+            <Pressable onPress={() => router.push('/abonnement')}>
+              <Text style={styles.publicLink}>Abonnement</Text>
             </Pressable>
-          ) : null
+          </View>
         }
       />
 
@@ -423,6 +464,15 @@ export default function ArtisanSpaceScreen() {
             </ChecklistItem>
 
             <ChecklistItem
+              done={Boolean(artisan.legal?.rccm?.trim() || artisan.legal?.ifu?.trim())}
+              optional
+              title="Identifiants légaux"
+              description="RCCM et IFU renforcent la confiance des clients."
+            >
+              <LegalForm artisan={artisan} onSave={saveProfile} saving={isSaving} />
+            </ChecklistItem>
+
+            <ChecklistItem
               done={Boolean(artisan.coverPhoto)}
               optional
               title="Photo de couverture"
@@ -438,6 +488,7 @@ export default function ArtisanSpaceScreen() {
           </View>
         </>
       )}
+
     </ScrollView>
   );
 }

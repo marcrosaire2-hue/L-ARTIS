@@ -102,6 +102,8 @@ const artisanValidation = {
       return true;
     }),
     body('contactEmail').optional({ values: 'falsy' }).isEmail().withMessage('E-mail de contact invalide'),
+    body('legal.rccm').optional().isString().isLength({ max: 60 }),
+    body('legal.ifu').optional().isString().isLength({ max: 40 }),
   ],
   // Réalisation : le prix est facultatif — « sur devis » est une réponse
   // légitime pour beaucoup de métiers, l'exiger poussait à saisir un chiffre

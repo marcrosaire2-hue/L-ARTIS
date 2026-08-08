@@ -5,6 +5,7 @@ import {
   Check,
   ClipboardList,
   Clock,
+  CreditCard,
   ExternalLink,
   Image as ImageIcon,
   Upload,
@@ -206,6 +207,46 @@ function PresentationForm({ artisan, onSave, saving }) {
           max="80"
           value={years}
           onChange={(event) => setYears(event.target.value)}
+        />
+      </Field>
+      <div className="flex items-center gap-3">
+        <Button type="submit" loading={saving}>
+          Enregistrer
+        </Button>
+        {saved && <span className="text-sm text-brand-700">Enregistré</span>}
+      </div>
+    </form>
+  );
+}
+
+function LegalInfoForm({ artisan, onSave, saving }) {
+  const [rccm, setRccm] = useState(artisan.legal?.rccm ?? '');
+  const [ifu, setIfu] = useState(artisan.legal?.ifu ?? '');
+  const [saved, setSaved] = useState(false);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setSaved(false);
+    await onSave({ legal: { rccm: rccm.trim(), ifu: ifu.trim() } });
+    setSaved(true);
+  };
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <Field label="Numéro RCCM" hint="Registre du Commerce et du Crédit Mobilier">
+        <Input
+          value={rccm}
+          maxLength={60}
+          onChange={(event) => setRccm(event.target.value)}
+          placeholder="RB/COT/XX XX XXXXX"
+        />
+      </Field>
+      <Field label="Identifiant Fiscal Unique (IFU)">
+        <Input
+          value={ifu}
+          maxLength={40}
+          onChange={(event) => setIfu(event.target.value)}
+          placeholder="IFU"
         />
       </Field>
       <div className="flex items-center gap-3">
@@ -452,10 +493,26 @@ export default function ArtisanSpacePage() {
           <p className="mt-1 text-slate-600">Votre espace artisan</p>
         </div>
         {isPublished && (
-          <Link to={`/artisans/${artisan.artisanId}`}>
+          <div className="flex flex-wrap gap-2">
+            <Link to={`/artisans/${artisan.artisanId}`}>
+              <Button variant="secondary" size="sm">
+                <ExternalLink className="size-4" aria-hidden="true" />
+                Voir ma fiche publique
+              </Button>
+            </Link>
+            <Link to="/abonnement">
+              <Button variant="secondary" size="sm">
+                <CreditCard className="size-4" aria-hidden="true" />
+                Mon abonnement
+              </Button>
+            </Link>
+          </div>
+        )}
+        {!isPublished && (
+          <Link to="/abonnement">
             <Button variant="secondary" size="sm">
-              <ExternalLink className="size-4" aria-hidden="true" />
-              Voir ma fiche publique
+              <CreditCard className="size-4" aria-hidden="true" />
+              Mon abonnement
             </Button>
           </Link>
         )}
@@ -518,6 +575,15 @@ export default function ArtisanSpacePage() {
           description="Annoncez au moins un tarif : les clients filtrent beaucoup par prix."
         >
           <RealisationsForm />
+        </ChecklistItem>
+
+        <ChecklistItem
+          done={Boolean(artisan.legal?.rccm?.trim() || artisan.legal?.ifu?.trim())}
+          optional
+          title="Informations légales"
+          description="RCCM et IFU — utiles pour la confiance et la conformité."
+        >
+          <LegalInfoForm artisan={artisan} onSave={saveProfile} saving={isSaving} />
         </ChecklistItem>
 
         <ChecklistItem

@@ -55,6 +55,26 @@ function Header() {
           >
             Trouver un artisan
           </NavLink>
+          {user && (
+            <>
+              <NavLink
+                to="/devis"
+                className={({ isActive }) =>
+                  `text-sm font-medium ${isActive ? 'text-brand-700' : 'text-slate-600 hover:text-slate-900'}`
+                }
+              >
+                Devis
+              </NavLink>
+              <NavLink
+                to="/messages"
+                className={({ isActive }) =>
+                  `text-sm font-medium ${isActive ? 'text-brand-700' : 'text-slate-600 hover:text-slate-900'}`
+                }
+              >
+                Messages
+              </NavLink>
+            </>
+          )}
           <NavLink
             to="/inscription?role=artisan"
             className="text-sm font-medium text-slate-600 hover:text-slate-900"
@@ -114,6 +134,16 @@ function Header() {
             <Link to="/recherche" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
               Trouver un artisan
             </Link>
+            {user && (
+              <>
+                <Link to="/devis" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                  Devis
+                </Link>
+                <Link to="/messages" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                  Messages
+                </Link>
+              </>
+            )}
             <Link to="/inscription?role=artisan" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
               Devenir artisan
             </Link>

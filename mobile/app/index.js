@@ -8,11 +8,12 @@ import { hasSeenIntro } from '../src/lib/onboarding';
 import { colors } from '../src/lib/theme';
 
 /**
- * Splash crème style Monpermis : logo fade+scale+rise, wordmark lettre
- * par lettre, puis bascule sans fade-out (évite le flash blanc).
+ * Splash crème : logo L-ARTIS (fade + scale + rise), wordmark lettre
+ * par lettre. Premier écran au lancement — toujours affiché avant
+ * connexion / intro / accueil.
  */
 const LETTERS = ['L', '-', 'A', 'R', 'T', 'I', 'S'];
-const HOLD_MS = 700;
+const HOLD_MS = 900;
 
 export default function OpeningScreen() {
   const router = useRouter();
@@ -27,7 +28,8 @@ export default function OpeningScreen() {
   const [introSeen, setIntroSeen] = useState(null);
 
   useEffect(() => {
-    SplashScreen.hideAsync().catch(() => {});
+    // Garder le splash natif (logo) jusqu'à ce que l'animation React soit prête,
+    // pour éviter un flash puis enchaîner directement sur l'animation du logo.
     hasSeenIntro().then(setIntroSeen);
 
     const letterStagger = LETTERS.map((_, index) =>
@@ -40,32 +42,37 @@ export default function OpeningScreen() {
       })
     );
 
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScale, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoTranslate, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel(letterStagger),
-      Animated.delay(HOLD_MS),
-    ]).start(({ finished }) => finished && setAnimationDone(true));
+    // Masquer le splash natif juste avant de lancer l'animation
+    SplashScreen.hideAsync()
+      .catch(() => {})
+      .finally(() => {
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(logoOpacity, {
+              toValue: 1,
+              duration: 900,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(logoScale, {
+              toValue: 1,
+              duration: 900,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(logoTranslate, {
+              toValue: 0,
+              duration: 900,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.parallel(letterStagger),
+          Animated.delay(HOLD_MS),
+        ]).start(({ finished }) => finished && setAnimationDone(true));
+      });
 
-    // Garde-fou Monpermis : ne jamais bloquer plus de ~5,5 s
+    // Garde-fou : ne jamais bloquer plus de ~5,5 s
     const safety = setTimeout(() => setAnimationDone(true), 5500);
     return () => clearTimeout(safety);
   }, [logoOpacity, logoScale, logoTranslate, letterAnims]);

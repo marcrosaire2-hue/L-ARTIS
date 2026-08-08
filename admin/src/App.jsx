@@ -15,6 +15,7 @@ import DashboardPage from './pages/DashboardPage';
 import ArtisansPage from './pages/ArtisansPage';
 import UsersPage from './pages/UsersPage';
 import ReviewsPage from './pages/ReviewsPage';
+import ReportsPage from './pages/ReportsPage';
 import CatalogPage from './pages/CatalogPage';
 import AdminsPage from './pages/AdminsPage';
 import ActivityPage from './pages/ActivityPage';
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="administrateurs" element={<AdminsPage />} />
         <Route path="tracabilite" element={<ActivityPage />} />
         <Route path="avis" element={<ReviewsPage />} />
+        <Route path="signalements" element={<ReportsPage />} />
         <Route path="catalogue" element={<CatalogPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

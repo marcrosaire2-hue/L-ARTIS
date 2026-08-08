@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,6 +25,18 @@ export default function AccountScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+
+  const needsTerms = Boolean(user && !user.termsAcceptedAt);
+  const termsAudience = user?.role === 'artisan' ? 'artisan' : 'client';
+
+  useEffect(() => {
+    if (needsTerms) {
+      router.push({
+        pathname: '/reglement',
+        params: { accept: '1', audience: termsAudience },
+      });
+    }
+  }, [needsTerms, termsAudience, router]);
 
   const onLogout = async () => {
     try {
@@ -119,6 +131,18 @@ export default function AccountScreen() {
       </View>
 
       <View style={styles.menu}>
+        {needsTerms ? (
+          <AlertBox tone="amber">
+            Acceptez le règlement d'utilisation pour accéder à toutes les fonctionnalités.
+          </AlertBox>
+        ) : null}
+        <Pressable
+          onPress={() => router.push('/messages')}
+          style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
+        >
+          <Text style={styles.linkTitle}>Messages</Text>
+          <Text style={styles.chevron}>→</Text>
+        </Pressable>
         <Pressable
           onPress={() => router.push('/notifications')}
           style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
@@ -143,13 +167,22 @@ export default function AccountScreen() {
           </Pressable>
         ) : null}
         {user.role === 'artisan' ? (
-          <Pressable
-            onPress={() => router.push('/espace-artisan')}
-            style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
-          >
-            <Text style={styles.linkTitle}>Espace artisan</Text>
-            <Text style={styles.chevron}>→</Text>
-          </Pressable>
+          <>
+            <Pressable
+              onPress={() => router.push('/espace-artisan')}
+              style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
+            >
+              <Text style={styles.linkTitle}>Espace artisan</Text>
+              <Text style={styles.chevron}>→</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/abonnement')}
+              style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
+            >
+              <Text style={styles.linkTitle}>Abonnement</Text>
+              <Text style={styles.chevron}>→</Text>
+            </Pressable>
+          </>
         ) : null}
         <Pressable
           onPress={() => router.push('/mentions-legales')}
@@ -162,16 +195,14 @@ export default function AccountScreen() {
           onPress={() =>
             router.push({
               pathname: '/reglement',
-              params: {
-                audience: user.role === 'artisan' ? 'artisan' : 'client',
-                force: '0',
-              },
+              // force=0 : simple consultation, sans repasser par l'acceptation.
+              params: { audience: termsAudience, force: '0' },
             })
           }
           style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
         >
           <Text style={styles.linkTitle}>
-            Règlement {user.role === 'artisan' ? 'artisans' : 'clients'}
+            Règlement {termsAudience === 'artisan' ? 'artisans' : 'clients'}
           </Text>
           <Text style={styles.chevron}>→</Text>
         </Pressable>

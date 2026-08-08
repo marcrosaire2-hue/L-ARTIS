@@ -79,6 +79,15 @@ export const authApi = api.injectEndpoints({
         await clearRefreshToken();
       },
     }),
+    acceptTerms: builder.mutation({
+      query: () => ({ url: '/auth/accept-terms', method: 'POST' }),
+      transformResponse: unwrapData,
+      invalidatesTags: ['Me'],
+    }),
+    changePassword: builder.mutation({
+      query: (body) => ({ url: '/auth/change-password', method: 'POST', body }),
+      transformResponse: unwrapData,
+    }),
     me: builder.query({
       query: () => '/auth/me',
       transformResponse: unwrapData,
@@ -102,6 +111,8 @@ export const {
   useVerifyEmailMutation,
   useResendVerificationMutation,
   useDeleteAccountMutation,
+  useAcceptTermsMutation,
+  useChangePasswordMutation,
   useMeQuery,
   useAcceptTermsMutation,
 } = authApi;
