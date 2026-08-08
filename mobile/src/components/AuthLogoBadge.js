@@ -8,7 +8,7 @@ export function AuthLogoBadge({ size = 72, style }) {
   return (
     <View style={[styles.badge, { width: size, height: size, borderRadius: size / 2 }, style]}>
       <Image
-        source={require('../../assets/logo.png')}
+        source={require('../../assets/logo-mark.png')}
         style={{
           position: 'absolute',
           left: inset,

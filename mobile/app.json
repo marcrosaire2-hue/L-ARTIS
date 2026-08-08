@@ -11,7 +11,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -31,7 +31,10 @@
               "host": "verification-email"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -45,10 +48,17 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logo.png",
+          "image": "./assets/logo-mark.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#FAF9F6"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "L-ARTIS accède à vos images pour illustrer vos réalisations.",
+          "cameraPermission": "L-ARTIS utilise l'appareil photo pour photographier vos réalisations."
         }
       ]
     ],
