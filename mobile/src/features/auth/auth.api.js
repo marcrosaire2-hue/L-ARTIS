@@ -93,11 +93,6 @@ export const authApi = api.injectEndpoints({
       transformResponse: unwrapData,
       providesTags: ['Me'],
     }),
-    acceptTerms: builder.mutation({
-      query: () => ({ url: '/auth/accept-terms', method: 'POST' }),
-      transformResponse: unwrapData,
-      invalidatesTags: ['Me'],
-    }),
   }),
 });
 
@@ -114,5 +109,4 @@ export const {
   useAcceptTermsMutation,
   useChangePasswordMutation,
   useMeQuery,
-  useAcceptTermsMutation,
 } = authApi;
