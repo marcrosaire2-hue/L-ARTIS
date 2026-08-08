@@ -305,7 +305,7 @@ export default function ArtisanPage() {
     );
   }
 
-  const { artisan, gallery = [], services = [], reviews } = data;
+  const { artisan, services = [], reviews } = data;
 
   return (
     <Container className="py-6">
@@ -343,48 +343,52 @@ export default function ArtisanPage() {
             </section>
           )}
 
-          <section>
-            <h2 className="mb-3 text-lg font-semibold text-slate-900">Prestations</h2>
-            {services.length === 0 ? (
-              <p className="text-slate-500">Aucune prestation publiée pour le moment.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {services.map((service) => (
-                  <Card key={service._id} className="p-4">
-                    <p className="font-medium text-slate-900">{service.title}</p>
-                    {service.description && (
-                      <p className="mt-1 text-sm text-slate-600">{service.description}</p>
-                    )}
-                    <p className="mt-3 font-semibold text-brand-700">
-                      {formatPrice(service.price)}{' '}
-                      <span className="text-sm font-normal text-slate-500">
-                        {PRICE_UNITS[service.priceUnit] ?? ''}
-                      </span>
-                    </p>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </section>
-
+          {/* Une seule section : la photo, ce qu'elle montre et ce que ça coûte.
+              Séparer « galerie » et « prestations » laissait le client faire
+              le rapprochement lui-même. */}
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-slate-900">
               <Images className="size-5 text-slate-400" aria-hidden="true" />
               Réalisations
             </h2>
-            {gallery.length === 0 ? (
-              <p className="text-slate-500">Aucune photo publiée pour le moment.</p>
+            {services.length === 0 ? (
+              <p className="text-slate-500">Aucune réalisation publiée pour le moment.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {gallery.map((item) => (
-                  <figure key={item.id} className="overflow-hidden rounded-xl bg-slate-100">
-                    <img
-                      src={mediaUrl(item.url)}
-                      alt={item.caption || ''}
-                      loading="lazy"
-                      className="aspect-square w-full object-cover"
-                    />
-                  </figure>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {services.map((service) => (
+                  <Card key={service._id} className="overflow-hidden">
+                    {service.media?.length > 0 && (
+                      <div className="flex gap-1 overflow-x-auto">
+                        {service.media.map((media) => (
+                          <img
+                            key={media._id}
+                            src={mediaUrl(media.url)}
+                            alt={service.title}
+                            loading="lazy"
+                            className="aspect-square w-40 shrink-0 object-cover"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <p className="font-medium text-slate-900">{service.title}</p>
+                      {service.description && (
+                        <p className="mt-1 text-sm text-slate-600">{service.description}</p>
+                      )}
+                      <p className="mt-3 font-semibold text-brand-700">
+                        {service.price != null ? (
+                          <>
+                            {formatPrice(service.price)}{' '}
+                            <span className="text-sm font-normal text-slate-500">
+                              {PRICE_UNITS[service.priceUnit] ?? ''}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-sm font-normal text-slate-500">Sur devis</span>
+                        )}
+                      </p>
+                    </div>
+                  </Card>
                 ))}
               </div>
             )}

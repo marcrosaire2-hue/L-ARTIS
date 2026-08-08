@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,13 +10,14 @@ import {
   Field,
   LoadingView,
   ScreenHeader,
-  SelectField,
   TextField,
 } from '../src/components/ui';
+import { RealisationForm, pickAndUpload } from '../src/components/RealisationForm';
 import {
-  useAddGalleryMediaMutation,
   useCreateMyServiceMutation,
+  useDeleteMyServiceMutation,
   useGetMyArtisanQuery,
+  useGetMyStatsQuery,
   useListMyServicesQuery,
   useUpdateMyProfileMutation,
   useUploadMediaMutation,
@@ -33,38 +26,7 @@ import { selectUser } from '../src/features/auth/authSlice';
 import { PRICE_UNITS, errorMessage, formatPrice, mediaUrl } from '../src/lib/format';
 import { colors, radius, spacing, typography } from '../src/lib/theme';
 
-async function pickAndUpload(uploadMedia) {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!permission.granted) {
-    throw new Error("Autorisez l'accès aux photos pour ajouter une image.");
-  }
-
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions?.Images ?? ['images'],
-    quality: 0.85,
-    allowsEditing: true,
-  });
-  if (result.canceled || !result.assets?.[0]) return null;
-
-  const asset = result.assets[0];
-  const name = asset.fileName || `photo-${Date.now()}.jpg`;
-  const type = asset.mimeType || 'image/jpeg';
-
-  return uploadMedia({
-    uri: asset.uri,
-    name,
-    type,
-  }).unwrap();
-}
-
-function StatusBanner({ artisan, user }) {
-  if (user?.email && !user.isEmailVerified) {
-    return (
-      <AlertBox tone="amber">
-        Confirmez votre adresse e-mail pour pouvoir réinitialiser votre mot de passe en cas d'oubli.
-      </AlertBox>
-    );
-  }
+function StatusBanner({ artisan }) {
   if (artisan.status === 'rejected') {
     return (
       <AlertBox>
@@ -88,27 +50,7 @@ function StatusBanner({ artisan, user }) {
   return <AlertBox tone="green">Votre fiche est publiée et visible par les clients.</AlertBox>;
 }
 
-function ChecklistItem({ done, optional, title, description, children }) {
-  return (
-    <View style={styles.card}>
-      <View style={styles.checkHead}>
-        <View style={[styles.checkDot, done && styles.checkDotOn]}>
-          <Text style={styles.checkMark}>{done ? '✓' : ''}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={styles.titleRow}>
-            <Text style={styles.cardTitle}>{title}</Text>
-            {optional ? <Badge label="Facultatif" tone="slate" /> : null}
-          </View>
-          {description ? <Text style={typography.small}>{description}</Text> : null}
-        </View>
-      </View>
-      <View style={{ marginTop: spacing.md }}>{children}</View>
-    </View>
-  );
-}
-
-function ImageUploader({ label, currentUrl, onUploaded }) {
+function ImageUploader({ label, currentUrl, onUploaded, ratio = 1 }) {
   const [uploadMedia, { isLoading }] = useUploadMediaMutation();
   const [error, setError] = useState(null);
   const preview = mediaUrl(currentUrl);
@@ -125,7 +67,7 @@ function ImageUploader({ label, currentUrl, onUploaded }) {
 
   return (
     <View>
-      <View style={styles.preview}>
+      <View style={[styles.preview, { width: 112 * ratio }]}>
         {preview ? (
           <Image source={{ uri: preview }} style={styles.previewImg} />
         ) : (
@@ -140,6 +82,26 @@ function ImageUploader({ label, currentUrl, onUploaded }) {
         style={{ marginTop: spacing.sm }}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function ChecklistItem({ done, optional, title, description, children }) {
+  return (
+    <View style={styles.card}>
+      <View style={styles.checkHead}>
+        <View style={[styles.checkDot, done && styles.checkDotOn]}>
+          <Text style={styles.checkMark}>{done ? '✓' : ''}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={styles.titleRow}>
+            <Text style={styles.cardTitle}>{title}</Text>
+            {optional ? <Badge label="Facultatif" tone="slate" /> : null}
+          </View>
+          {description ? <Text style={typography.small}>{description}</Text> : null}
+        </View>
+      </View>
+      <View style={{ marginTop: spacing.md }}>{children}</View>
     </View>
   );
 }
@@ -176,11 +138,7 @@ function PresentationForm({ artisan, onSave, saving }) {
         />
       </Field>
       <Field label="Années d'expérience">
-        <TextField
-          value={years}
-          onChangeText={setYears}
-          keyboardType="number-pad"
-        />
+        <TextField value={years} onChangeText={setYears} keyboardType="number-pad" />
       </Field>
       <Button label="Enregistrer" loading={saving} onPress={submit} />
       {saved ? <Text style={styles.saved}>Enregistré</Text> : null}
@@ -188,75 +146,128 @@ function PresentationForm({ artisan, onSave, saving }) {
   );
 }
 
-function FirstServiceForm() {
-  const { data: services } = useListMyServicesQuery();
+/** Liste des réalisations + formulaire d'ajout. */
+function Realisations({ items, showForm = true }) {
   const [createService, { isLoading }] = useCreateMyServiceMutation();
-  const [form, setForm] = useState({ title: '', description: '', price: '', priceUnit: 'forfait' });
-  const [error, setError] = useState(null);
-
-  const list = services ?? [];
-
-  const submit = async () => {
-    setError(null);
-    if (!form.title.trim() || form.title.trim().length < 3) {
-      return setError('Intitulé trop court (3 caractères min.).');
-    }
-    try {
-      await createService({
-        title: form.title.trim(),
-        description: form.description,
-        price: Number(form.price),
-        priceUnit: form.priceUnit,
-      }).unwrap();
-      setForm({ title: '', description: '', price: '', priceUnit: 'forfait' });
-    } catch (createError) {
-      setError(errorMessage(createError, "La prestation n'a pas pu être créée."));
-    }
-  };
+  const [deleteService] = useDeleteMyServiceMutation();
+  const [confirmId, setConfirmId] = useState(null);
 
   return (
     <View>
-      {list.map((service) => (
-        <View key={service._id} style={styles.serviceRow}>
-          <Text style={styles.serviceTitle}>{service.title}</Text>
-          <Text style={typography.small}>
-            {formatPrice(service.price)} {PRICE_UNITS[service.priceUnit] ?? ''}
-          </Text>
+      {items.map((service) => {
+        const cover = service.media?.[0]?.url;
+        return (
+          <View key={service._id} style={styles.realisation}>
+            {cover ? (
+              <Image source={{ uri: mediaUrl(cover) }} style={styles.realisationImg} />
+            ) : (
+              <View style={[styles.realisationImg, styles.realisationImgEmpty]} />
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.realisationTitle}>{service.title}</Text>
+              <Text style={typography.small}>
+                {service.price != null
+                  ? `${formatPrice(service.price)} ${PRICE_UNITS[service.priceUnit] ?? ''}`
+                  : 'Sur devis'}
+                {service.media?.length > 1 ? ` · ${service.media.length} photos` : ''}
+              </Text>
+              {confirmId === service._id ? (
+                <View style={styles.confirmRow}>
+                  <Pressable
+                    onPress={() => deleteService(service._id).unwrap().catch(() => {})}
+                    style={styles.confirmDelete}
+                  >
+                    <Text style={styles.confirmDeleteText}>Supprimer</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setConfirmId(null)} style={styles.confirmCancel}>
+                    <Text style={styles.confirmCancelText}>Annuler</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable onPress={() => setConfirmId(service._id)}>
+                  <Text style={styles.removeLink}>Retirer</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        );
+      })}
+
+      {showForm ? (
+        <View style={items.length ? styles.formSpacing : null}>
+          <RealisationForm
+            submitting={isLoading}
+            submitLabel={items.length ? 'Ajouter cette réalisation' : 'Publier ma première réalisation'}
+            onSubmit={(body) => createService(body).unwrap()}
+          />
         </View>
-      ))}
+      ) : null}
+    </View>
+  );
+}
 
-      {error ? <AlertBox>{error}</AlertBox> : null}
+function StatTile({ label, value }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
 
-      <Field label="Intitulé">
-        <TextField
-          value={form.title}
-          onChangeText={(title) => setForm({ ...form, title })}
-          placeholder="Pose de carrelage"
-          maxLength={100}
+/**
+ * Tableau de bord — affiché seulement quand il y a une activité réelle.
+ * Une colonne de zéros le premier jour donne l'impression d'un service mort ;
+ * tant que rien ne s'est passé, l'artisan voit sa liste de choses à faire.
+ */
+function Dashboard({ artisan, stats, services, router, onSave, saving }) {
+  return (
+    <View>
+      <View style={styles.statRow}>
+        <StatTile label="Vues du profil" value={stats.views ?? 0} />
+        <StatTile label="Réalisations" value={services.length} />
+        <StatTile label="Demandes" value={stats.quotes?.total ?? 0} />
+        <StatTile label="Avis" value={stats.reviewsCount ?? 0} />
+        <StatTile label="Favoris" value={stats.favorites ?? 0} />
+        <StatTile
+          label="Note"
+          value={stats.rating?.count ? `${stats.rating.average}/5` : '—'}
         />
-      </Field>
-      <Field label="Description">
-        <TextField
-          value={form.description}
-          onChangeText={(description) => setForm({ ...form, description })}
-          multiline
-          maxLength={2000}
-        />
-      </Field>
-      <Field label="Prix (FCFA)">
-        <TextField
-          value={form.price}
-          onChangeText={(price) => setForm({ ...form, price })}
-          keyboardType="number-pad"
-        />
-      </Field>
-      <SelectField
-        label="Unité"
-        value={form.priceUnit}
-        onChange={(priceUnit) => setForm({ ...form, priceUnit })}
-        options={Object.entries(PRICE_UNITS).map(([value, label]) => ({ value, label }))}
-      />
-      <Button label="Ajouter cette prestation" variant="secondary" loading={isLoading} onPress={submit} />
+      </View>
+
+      {stats.quotes?.pending > 0 ? (
+        <Pressable onPress={() => router.push('/devis')} style={styles.callout}>
+          <Text style={styles.calloutTitle}>
+            {stats.quotes.pending} demande{stats.quotes.pending > 1 ? 's' : ''} en attente
+          </Text>
+          <Text style={typography.small}>
+            Répondez vite : c'est le premier critère de choix d'un client.
+          </Text>
+        </Pressable>
+      ) : null}
+
+      <View style={[styles.card, { marginTop: spacing.md }]}>
+        <Text style={styles.cardTitle}>Mes réalisations</Text>
+        <Text style={[typography.small, { marginBottom: spacing.md }]}>
+          Chaque nouvelle réalisation vous rend visible sur de nouvelles recherches.
+        </Text>
+        <Realisations items={services} />
+      </View>
+
+      <View style={[styles.card, { marginTop: spacing.md }]}>
+        <Text style={styles.cardTitle}>Mon profil</Text>
+        <View style={{ marginTop: spacing.md }}>
+          <Text style={styles.subLabel}>Photo de profil</Text>
+          <ImageUploader
+            label="Ajouter une photo"
+            currentUrl={artisan.profilePhoto}
+            onUploaded={(url) => onSave({ profilePhoto: url })}
+          />
+        </View>
+        <View style={{ marginTop: spacing.lg }}>
+          <PresentationForm artisan={artisan} onSave={onSave} saving={saving} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -265,19 +276,16 @@ export default function ArtisanSpaceScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const user = useSelector(selectUser);
+  const isArtisan = user?.role === 'artisan';
 
-  const { data, isLoading, isError, error } = useGetMyArtisanQuery(undefined, {
-    skip: user?.role !== 'artisan',
-  });
-  const { data: services } = useListMyServicesQuery(undefined, {
-    skip: user?.role !== 'artisan',
-  });
+  const { data, isLoading, isError, error } = useGetMyArtisanQuery(undefined, { skip: !isArtisan });
+  const { data: services } = useListMyServicesQuery(undefined, { skip: !isArtisan });
+  const { data: stats } = useGetMyStatsQuery(undefined, { skip: !isArtisan });
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
-  const [addGalleryMedia] = useAddGalleryMediaMutation();
 
-  if (user?.role !== 'artisan') {
+  if (!isArtisan) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.lg }]}>
+      <View style={[styles.screen, styles.padded, { paddingTop: insets.top + spacing.md }]}>
         <ScreenHeader title="Espace artisan" onBack={() => router.back()} />
         <AlertBox tone="amber">Cet espace est réservé aux comptes artisans.</AlertBox>
       </View>
@@ -286,7 +294,7 @@ export default function ArtisanSpaceScreen() {
 
   if (!user.termsAcceptedAt) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.lg }]}>
+      <View style={[styles.screen, styles.padded, { paddingTop: insets.top + spacing.md }]}>
         <ScreenHeader title="Espace artisan" onBack={() => router.back()} />
         <AlertBox tone="amber">
           Validez d’abord le règlement artisans pour accéder à votre espace.
@@ -315,7 +323,7 @@ export default function ArtisanSpaceScreen() {
 
   if (isError || !data) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.lg }]}>
+      <View style={[styles.screen, styles.padded, { paddingTop: insets.top + spacing.md }]}>
         <ScreenHeader title="Espace artisan" onBack={() => router.back()} />
         <AlertBox>{errorMessage(error)}</AlertBox>
       </View>
@@ -323,18 +331,18 @@ export default function ArtisanSpaceScreen() {
   }
 
   const artisan = data.artisan;
-  const serviceCount = (services ?? []).length;
+  const list = services ?? [];
+  const saveProfile = (patch) => updateProfile(patch).unwrap().catch(() => {});
+
   const steps = [
     { key: 'photo', done: Boolean(artisan.profilePhoto) },
     { key: 'bio', done: Boolean(artisan.bio?.trim()) },
-    { key: 'service', done: serviceCount > 0 },
+    { key: 'realisation', done: list.length > 0 },
   ];
-  const completed = steps.filter((s) => s.done).length;
-  const readyToSubmit = completed === steps.length;
-  const isPublished = artisan.status === 'validated';
+  const completed = steps.filter((step) => step.done).length;
   const progress = (completed / steps.length) * 100;
-
-  const saveProfile = (patch) => updateProfile(patch).unwrap().catch(() => {});
+  const isPublished = artisan.status === 'validated';
+  const showDashboard = Boolean(stats?.hasActivity);
 
   return (
     <ScrollView
@@ -355,89 +363,88 @@ export default function ArtisanSpaceScreen() {
         }
       />
 
-      <StatusBanner artisan={artisan} user={user} />
+      <StatusBanner artisan={artisan} />
 
-      {!isPublished ? (
-        <View style={[styles.card, { marginTop: spacing.md }]}>
-          <View style={styles.progressHead}>
-            <Text style={styles.cardTitle}>Complétez votre fiche</Text>
-            <Text style={typography.small}>
-              {completed} / {steps.length}
+      {showDashboard ? (
+        <Dashboard
+          artisan={artisan}
+          stats={stats}
+          services={list}
+          router={router}
+          onSave={saveProfile}
+          saving={isSaving}
+        />
+      ) : (
+        <>
+          <View style={[styles.card, { marginTop: spacing.md }]}>
+            <View style={styles.progressHead}>
+              <Text style={styles.cardTitle}>Complétez votre fiche</Text>
+              <Text style={typography.small}>
+                {completed} / {steps.length}
+              </Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            </View>
+            <Text style={[typography.small, { marginTop: spacing.sm }]}>
+              {completed === steps.length
+                ? 'Tout est prêt. Notre équipe examinera votre fiche très prochainement.'
+                : 'Une fiche complète est validée plus vite et inspire davantage confiance.'}
             </Text>
           </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+
+          <View style={{ gap: spacing.md, marginTop: spacing.md }}>
+            <ChecklistItem
+              done={Boolean(artisan.profilePhoto)}
+              title="Photo de profil"
+              description="Un visage ou votre logo : c'est le premier élément de confiance."
+            >
+              <ImageUploader
+                label="Ajouter une photo"
+                currentUrl={artisan.profilePhoto}
+                onUploaded={(url) => saveProfile({ profilePhoto: url })}
+              />
+            </ChecklistItem>
+
+            <ChecklistItem
+              done={Boolean(artisan.bio?.trim())}
+              title="Présentation"
+              description="Expliquez qui vous êtes et ce que vous savez faire."
+            >
+              <PresentationForm artisan={artisan} onSave={saveProfile} saving={isSaving} />
+            </ChecklistItem>
+
+            <ChecklistItem
+              done={list.length > 0}
+              title="Vos réalisations"
+              description="Une photo, un nom, un prix : c'est ce qui décide le client."
+            >
+              <Realisations items={list} />
+            </ChecklistItem>
+
+            <ChecklistItem
+              done={Boolean(artisan.coverPhoto)}
+              optional
+              title="Photo de couverture"
+              description="Une image large en haut de votre fiche."
+            >
+              <ImageUploader
+                label="Ajouter une couverture"
+                currentUrl={artisan.coverPhoto}
+                ratio={1.6}
+                onUploaded={(url) => saveProfile({ coverPhoto: url })}
+              />
+            </ChecklistItem>
           </View>
-          <Text style={[typography.small, { marginTop: spacing.sm }]}>
-            {readyToSubmit
-              ? 'Tout est prêt. Notre équipe examinera votre fiche très prochainement.'
-              : 'Une fiche complète est validée plus vite et inspire davantage confiance.'}
-          </Text>
-        </View>
-      ) : null}
-
-      <View style={{ gap: spacing.md, marginTop: spacing.md }}>
-        <ChecklistItem
-          done={Boolean(artisan.profilePhoto)}
-          title="Photo de profil"
-          description="Un visage ou votre logo : c'est le premier élément de confiance."
-        >
-          <ImageUploader
-            label="Ajouter une photo"
-            currentUrl={artisan.profilePhoto}
-            onUploaded={(url) => saveProfile({ profilePhoto: url })}
-          />
-        </ChecklistItem>
-
-        <ChecklistItem
-          done={Boolean(artisan.bio?.trim())}
-          title="Présentation"
-          description="Expliquez qui vous êtes et ce que vous savez faire."
-        >
-          <PresentationForm artisan={artisan} onSave={saveProfile} saving={isSaving} />
-        </ChecklistItem>
-
-        <ChecklistItem
-          done={serviceCount > 0}
-          title="Vos prestations"
-          description="Annoncez au moins un tarif : les clients filtrent beaucoup par prix."
-        >
-          <FirstServiceForm />
-        </ChecklistItem>
-
-        <ChecklistItem
-          done={Boolean(artisan.coverPhoto)}
-          optional
-          title="Photo de couverture"
-          description="Une image large en haut de votre fiche."
-        >
-          <ImageUploader
-            label="Ajouter une couverture"
-            currentUrl={artisan.coverPhoto}
-            onUploaded={(url) => saveProfile({ coverPhoto: url })}
-          />
-        </ChecklistItem>
-
-        <ChecklistItem
-          done={false}
-          optional
-          title="Galerie de réalisations"
-          description="Vos photos de chantiers convainquent mieux que n'importe quel texte."
-        >
-          <ImageUploader
-            label="Ajouter une réalisation"
-            onUploaded={(_url, media) =>
-              addGalleryMedia({ mediaId: media?.id, url: media?.url }).unwrap().catch(() => {})
-            }
-          />
-        </ChecklistItem>
-      </View>
+        </>
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.cream },
+  padded: { paddingHorizontal: spacing.lg },
   content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   card: {
     backgroundColor: colors.background,
@@ -462,8 +469,8 @@ const styles = StyleSheet.create({
   checkMark: { color: '#fff', fontWeight: '700', fontSize: 12 },
   titleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   cardTitle: { fontWeight: '700', fontSize: 16, color: colors.text },
+  subLabel: { ...typography.muted, fontWeight: '600', marginBottom: spacing.xs },
   preview: {
-    width: 112,
     height: 112,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
@@ -474,18 +481,50 @@ const styles = StyleSheet.create({
   previewImg: { width: '100%', height: '100%' },
   error: { ...typography.small, color: colors.danger, marginTop: 6 },
   saved: { ...typography.small, color: colors.brandDark, marginTop: 8, fontWeight: '600' },
-  serviceRow: {
+  realisation: {
+    flexDirection: 'row',
+    gap: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    padding: spacing.md,
+    padding: spacing.sm,
     marginBottom: spacing.sm,
-  },
-  serviceTitle: { fontWeight: '600', color: colors.text },
-  progressHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
+  realisationImg: { width: 64, height: 64, borderRadius: radius.md, backgroundColor: colors.border },
+  realisationImgEmpty: { opacity: 0.5 },
+  realisationTitle: { fontWeight: '700', color: colors.text },
+  removeLink: { ...typography.small, color: colors.danger, fontWeight: '600', marginTop: 4 },
+  confirmRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 6 },
+  confirmDelete: {
+    backgroundColor: colors.danger,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  confirmDeleteText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  confirmCancel: { paddingHorizontal: spacing.sm, paddingVertical: 6 },
+  confirmCancelText: { ...typography.small, fontWeight: '600' },
+  formSpacing: { marginTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md },
+  statRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  stat: {
+    flexGrow: 1,
+    flexBasis: '30%',
+    backgroundColor: colors.background,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  statValue: { fontSize: 22, fontWeight: '800', color: colors.navy },
+  statLabel: { ...typography.small, marginTop: 2 },
+  callout: {
+    marginTop: spacing.md,
+    backgroundColor: colors.brandSurface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  calloutTitle: { fontWeight: '700', color: colors.brandDark, marginBottom: 2 },
+  progressHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   progressTrack: {
     height: 8,
     borderRadius: radius.full,

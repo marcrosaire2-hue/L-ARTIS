@@ -237,7 +237,7 @@ export default function ArtisanDetailScreen() {
     );
   }
 
-  const { artisan, gallery = [], services = [], reviews } = data;
+  const { artisan, services = [], reviews } = data;
   const cover = mediaUrl(artisan.coverPhoto);
   const photo = mediaUrl(artisan.profilePhoto);
   const location = [artisan.location?.district, artisan.location?.commune, artisan.location?.department]
@@ -317,37 +317,39 @@ export default function ArtisanDetailScreen() {
           </View>
         ) : null}
 
+        {/* Une seule section : la photo, ce qu'elle montre et ce que ça coûte.
+            Séparer « galerie » et « prestations » obligeait le client à faire
+            le rapprochement lui-même. */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Prestations</Text>
+          <Text style={styles.sectionTitle}>Réalisations</Text>
           {services.length === 0 ? (
-            <Text style={typography.muted}>Aucune prestation publiée pour le moment.</Text>
+            <Text style={typography.muted}>Aucune réalisation publiée pour le moment.</Text>
           ) : (
-            services.map((service) => (
-              <View key={service._id} style={styles.service}>
-                <Text style={styles.serviceTitle}>{service.title}</Text>
-                {service.description ? (
-                  <Text style={typography.small}>{service.description}</Text>
-                ) : null}
-                <Text style={styles.servicePrice}>
-                  {formatPrice(service.price)} {PRICE_UNITS[service.priceUnit] ?? ''}
-                </Text>
-              </View>
-            ))
+            services.map((service) => {
+              const photos = (service.media ?? []).map((m) => mediaUrl(m.url)).filter(Boolean);
+              return (
+                <View key={service._id} style={styles.service}>
+                  {photos.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {photos.map((uri) => (
+                        <Image key={uri} source={{ uri }} style={styles.galleryImg} />
+                      ))}
+                    </ScrollView>
+                  ) : null}
+                  <Text style={styles.serviceTitle}>{service.title}</Text>
+                  {service.description ? (
+                    <Text style={typography.small}>{service.description}</Text>
+                  ) : null}
+                  <Text style={styles.servicePrice}>
+                    {service.price != null
+                      ? `${formatPrice(service.price)} ${PRICE_UNITS[service.priceUnit] ?? ''}`
+                      : 'Sur devis'}
+                  </Text>
+                </View>
+              );
+            })
           )}
         </View>
-
-        {gallery.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Réalisations</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {gallery.map((item) => {
-                const uri = mediaUrl(item.url || item.media?.url);
-                if (!uri) return null;
-                return <Image key={item._id || uri} source={{ uri }} style={styles.galleryImg} />;
-              })}
-            </ScrollView>
-          </View>
-        ) : null}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Avis</Text>

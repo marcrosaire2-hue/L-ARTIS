@@ -53,16 +53,6 @@ export const artisansApi = api.injectEndpoints({
       query: (id) => ({ url: `/artisans/services/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Service'],
     }),
-    addGalleryMedia: builder.mutation({
-      query: (body) => ({ url: '/artisans/me/gallery/media', method: 'POST', body }),
-      transformResponse: unwrapData,
-      invalidatesTags: ['Gallery'],
-    }),
-    removeGalleryItem: builder.mutation({
-      query: (itemId) => ({ url: `/artisans/me/gallery/items/${itemId}`, method: 'DELETE' }),
-      transformResponse: unwrapData,
-      invalidatesTags: ['Gallery'],
-    }),
 
     /* --- Médias --- */
     uploadMedia: builder.mutation({
@@ -88,7 +78,5 @@ export const {
   useCreateMyServiceMutation,
   useUpdateMyServiceMutation,
   useDeleteMyServiceMutation,
-  useAddGalleryMediaMutation,
-  useRemoveGalleryItemMutation,
   useUploadMediaMutation,
 } = artisansApi;

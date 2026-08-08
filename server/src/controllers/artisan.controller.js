@@ -1,6 +1,6 @@
 /**
  * Contrôleur artisans — recherche, fiche publique, profil propriétaire,
- * services, galerie, statistiques.
+ * réalisations, statistiques.
  */
 const catchAsync = require('../utils/catchAsync');
 const ApiResponse = require('../utils/ApiResponse');
@@ -25,43 +25,26 @@ const updateMyProfile = catchAsync(async (req, res) => {
   res.json(ApiResponse.ok('Profil mis à jour', { artisan }));
 });
 
-/* --- Services --- */
+/* --- Réalisations --- */
 
 const listMyServices = catchAsync(async (req, res) => {
   const data = await artisanService.listServices(req.artisan._id);
-  res.json(ApiResponse.ok('Services récupérés', data));
+  res.json(ApiResponse.ok('Réalisations récupérées', data));
 });
 
 const createMyService = catchAsync(async (req, res) => {
   const data = await artisanService.createService(req.artisan._id, req.body);
-  res.status(201).json(ApiResponse.created('Service créé', data));
+  res.status(201).json(ApiResponse.created('Réalisation publiée', data));
 });
 
 const updateMyService = catchAsync(async (req, res) => {
   const data = await artisanService.updateService(req.artisan._id, req.params.id, req.body);
-  res.json(ApiResponse.ok('Service mis à jour', data));
+  res.json(ApiResponse.ok('Réalisation mise à jour', data));
 });
 
 const deleteMyService = catchAsync(async (req, res) => {
   await artisanService.deleteService(req.artisan._id, req.params.id);
-  res.json(ApiResponse.ok('Service supprimé'));
-});
-
-/* --- Galerie --- */
-
-const updateMyGallery = catchAsync(async (req, res) => {
-  const data = await artisanService.updateGallery(req.artisan._id, req.body.items);
-  res.json(ApiResponse.ok('Galerie mise à jour', data));
-});
-
-const addMediaToGallery = catchAsync(async (req, res) => {
-  const data = await artisanService.addMediaToGallery(req.artisan._id, req.body.mediaId, req.body.caption);
-  res.json(ApiResponse.ok('Média ajouté à la galerie', data));
-});
-
-const removeGalleryItem = catchAsync(async (req, res) => {
-  const data = await artisanService.removeMediaFromGallery(req.artisan._id, req.params.itemId);
-  res.json(ApiResponse.ok('Média retiré de la galerie', data));
+  res.json(ApiResponse.ok('Réalisation supprimée'));
 });
 
 /* --- Statistiques --- */
@@ -80,8 +63,5 @@ module.exports = {
   createMyService,
   updateMyService,
   deleteMyService,
-  updateMyGallery,
-  addMediaToGallery,
-  removeGalleryItem,
   getMyStats,
 };

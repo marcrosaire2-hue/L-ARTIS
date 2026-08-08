@@ -2,7 +2,7 @@
  * Service uploads — envoi des fichiers vers Cloudinary,
  * enregistrement du document Media, suppression (cloud + références).
  */
-const { Media, Gallery } = require('../models');
+const { Media, Gallery, Service } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { cloudinary, CLOUDINARY_OPTS } = require('../config/cloudinary');
 
@@ -44,8 +44,28 @@ async function saveUploadedMedia(uploadedBy, file) {
 }
 
 /**
- * Supprime un média : Cloudinary (fichier distant) + document
- * + références dans les galeries.
+ * Efface le fichier distant, le document Media et ses références.
+ * Sans contrôle de propriété : réservé aux appelants qui l'ont déjà établi
+ * (suppression d'une réalisation par son artisan, par exemple).
+ */
+async function removeMediaFile(mediaId) {
+  const media = await Media.findById(mediaId);
+  if (!media) return;
+
+  // Suppression dans le cloud (ignorer si le fichier n'existe plus)
+  await cloudinary.uploader
+    .destroy(media.publicId, { resource_type: media.kind === 'video' ? 'video' : 'image' })
+    .catch(() => {});
+
+  await Promise.all([
+    Gallery.updateMany({ 'items.media': media._id }, { $pull: { items: { media: media._id } } }),
+    Service.updateMany({ media: media._id }, { $pull: { media: media._id } }),
+  ]);
+  await media.deleteOne();
+}
+
+/**
+ * Suppression demandée par un utilisateur : la propriété est vérifiée ici.
  */
 async function deleteMedia(mediaId, userId) {
   const media = await Media.findById(mediaId);
@@ -54,14 +74,7 @@ async function deleteMedia(mediaId, userId) {
   const isOwner = media.uploadedBy.toString() === userId.toString();
   if (!isOwner) throw new ApiError(403, 'Vous ne pouvez pas supprimer ce média');
 
-  // Suppression dans le cloud (ignorer si le fichier n'existe plus)
-  await cloudinary.uploader.destroy(media.publicId, { resource_type: media.kind === 'video' ? 'video' : 'image' }).catch(() => {});
-
-  await Gallery.updateMany(
-    { 'items.media': media._id },
-    { $pull: { items: { media: media._id } } }
-  );
-  await media.deleteOne();
+  await removeMediaFile(media._id);
 }
 
-module.exports = { saveUploadedMedia, deleteMedia };
+module.exports = { saveUploadedMedia, deleteMedia, removeMediaFile };

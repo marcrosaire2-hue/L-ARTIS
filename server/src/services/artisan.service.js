@@ -1,12 +1,11 @@
 /**
  * Service artisans — recherche, fiche publique, gestion du profil,
- * services, galerie et statistiques du tableau de bord.
+ * réalisations et statistiques du tableau de bord.
  */
 const mongoose = require('mongoose');
 const {
   Artisan,
   Trade,
-  Gallery,
   Service,
   Quote,
   Review,
@@ -14,6 +13,7 @@ const {
   Media,
 } = require('../models');
 const ApiError = require('../utils/ApiError');
+const { removeMediaFile: deleteMediaFile } = require('./upload.service');
 const { PAGINATION } = require('../constants');
 
 const PUBLIC_FIELDS = {
@@ -212,9 +212,11 @@ async function getPublicProfile(artisanId) {
 
   if (!artisan) throw new ApiError(404, 'Artisan introuvable ou non publié');
 
-  const [gallery, services, reviewsSummary] = await Promise.all([
-    Gallery.findOne({ artisan: artisan._id, isPublic: true }).populate('items.media').lean(),
-    Service.find({ artisan: artisan._id, isActive: true }).sort({ createdAt: -1 }).lean(),
+  const [services, reviewsSummary] = await Promise.all([
+    Service.find({ artisan: artisan._id, isActive: true })
+      .populate('media', 'url kind')
+      .sort({ createdAt: -1 })
+      .lean(),
     Review.aggregate([
       { $match: { artisan: artisan._id, status: 'approved' } },
       {
@@ -246,7 +248,8 @@ async function getPublicProfile(artisanId) {
         count: summary.count,
       },
     },
-    gallery: gallery ? gallery.items.map((i) => ({ id: i._id, url: i.media?.url, kind: i.media?.kind, caption: i.caption })) : [],
+    // Plus de « galerie » séparée : les photos appartiennent aux réalisations
+    // qu'elles illustrent. Une image et son prix se lisent ensemble.
     services,
     reviews: { items: reviewsSummary[0].latest, total: summary.count },
   };
@@ -292,67 +295,69 @@ async function updateProfile(artisanId, data) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Services de l'artisan                                               */
+/* Réalisations de l'artisan                                           */
 /* ------------------------------------------------------------------ */
 
+const REALISATION_FIELDS = [
+  'title',
+  'description',
+  'price',
+  'priceUnit',
+  'durationMin',
+  'media',
+  'isActive',
+  'isPromoted',
+  'trade',
+];
+
 async function listServices(artisanId) {
-  return Service.find({ artisan: artisanId }).sort({ createdAt: -1 });
+  return Service.find({ artisan: artisanId })
+    .populate('media', 'url kind')
+    .sort({ createdAt: -1 });
 }
 
 async function createService(artisanId, data) {
-  return Service.create({ artisan: artisanId, ...data });
+  const payload = {};
+  REALISATION_FIELDS.forEach((field) => {
+    if (data[field] !== undefined) payload[field] = data[field];
+  });
+
+  const service = await Service.create({ artisan: artisanId, ...payload });
+  return service.populate('media', 'url kind');
 }
 
 async function updateService(artisanId, serviceId, data) {
   const service = await Service.findOne({ _id: serviceId, artisan: artisanId });
-  if (!service) throw new ApiError(404, 'Service introuvable');
+  if (!service) throw new ApiError(404, 'Réalisation introuvable');
 
-  ['title', 'description', 'price', 'priceUnit', 'durationMin', 'images', 'isActive', 'isPromoted', 'trade'].forEach(
-    (key) => {
-      if (data[key] !== undefined) service[key] = data[key];
-    }
-  );
+  REALISATION_FIELDS.forEach((field) => {
+    if (data[field] !== undefined) service[field] = data[field];
+  });
   await service.save();
-  return service;
+  return service.populate('media', 'url kind');
 }
-
-async function deleteService(artisanId, serviceId) {
-  const service = await Service.findOne({ _id: serviceId, artisan: artisanId });
-  if (!service) throw new ApiError(404, 'Service introuvable');
-  await service.deleteOne();
-}
-
-/* ------------------------------------------------------------------ */
-/* Galerie                                                             */
-/* ------------------------------------------------------------------ */
 
 /**
- * Remplace la galerie : items = [{ media: ObjectId, caption, sortOrder }].
+ * Supprime la réalisation ET ses photos. Sans cette cascade, les fichiers
+ * resteraient chez l'hébergeur d'images, facturé au volume, sans qu'aucun
+ * écran ne les affiche plus — impossible de les retrouver pour les purger.
  */
-async function updateGallery(artisanId, items = []) {
-  const gallery = await Gallery.findOneAndUpdate(
-    { artisan: artisanId },
-    { $set: { items } },
-    { upsert: true, new: true }
-  );
-  return gallery;
-}
+async function deleteService(artisanId, serviceId) {
+  const service = await Service.findOne({ _id: serviceId, artisan: artisanId });
+  if (!service) throw new ApiError(404, 'Réalisation introuvable');
 
-async function addMediaToGallery(artisanId, mediaId, caption = '') {
-  const gallery = await Gallery.findOneAndUpdate(
-    { artisan: artisanId },
-    { $push: { items: { media: mediaId, caption } } },
-    { upsert: true, new: true }
-  );
-  return gallery;
-}
+  const mediaIds = [...(service.media || [])];
+  await service.deleteOne();
 
-async function removeMediaFromGallery(artisanId, galleryItemId) {
-  const gallery = await Gallery.findOne({ artisan: artisanId });
-  if (!gallery) throw new ApiError(404, 'Galerie introuvable');
-  gallery.items = gallery.items.filter((i) => i._id.toString() !== galleryItemId);
-  await gallery.save();
-  return gallery;
+  // Les photos partent après la réalisation : un échec de suppression chez
+  // l'hébergeur ne doit pas laisser une réalisation fantôme à l'écran.
+  await Promise.all(
+    mediaIds.map((mediaId) =>
+      deleteMediaFile(mediaId).catch(() => {
+        /* fichier déjà absent ou hébergeur indisponible */
+      })
+    )
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -383,13 +388,21 @@ async function getDashboardStats(artisanId) {
       Artisan.findById(artisanId).select('viewCount rating favoriteCount'),
     ]);
 
+  const realisations = await Service.countDocuments({ artisan: artisanId, isActive: true });
+
+  // `hasActivity` décide de l'écran affiché à l'artisan : tant que rien ne
+  // s'est produit, un tableau de bord ne montrerait qu'une colonne de zéros,
+  // ce qui donne l'impression que le service ne marche pas. On lui montre
+  // alors sa liste de choses à faire.
   return {
     views: artisan.viewCount,
     favoriteCount: artisan.favoriteCount,
     rating: artisan.rating,
+    realisations,
     quotes: { total: quotes, pending: pendingQuotes, completed: completedQuotes },
     reviewsCount: reviews,
     favorites: favorites,
+    hasActivity: quotes > 0 || reviews > 0 || favorites > 0 || artisan.viewCount > 0,
     monthlyQuotes: monthly.map((m) => ({
       month: `${String(m._id.month).padStart(2, '0')}/${m._id.year}`,
       count: m.count,
@@ -405,8 +418,5 @@ module.exports = {
   createService,
   updateService,
   deleteService,
-  updateGallery,
-  addMediaToGallery,
-  removeMediaFromGallery,
   getDashboardStats,
 };

@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import {
   BadgeCheck,
   Check,
@@ -8,19 +7,17 @@ import {
   Clock,
   ExternalLink,
   Image as ImageIcon,
-  MailWarning,
   Upload,
   XCircle,
 } from 'lucide-react';
 import {
-  useAddGalleryMediaMutation,
   useCreateMyServiceMutation,
+  useDeleteMyServiceMutation,
   useGetMyArtisanQuery,
   useListMyServicesQuery,
   useUpdateMyProfileMutation,
   useUploadMediaMutation,
 } from '../features/artisans/artisans.api';
-import { selectUser } from '../features/auth/authSlice';
 import {
   Alert,
   Badge,
@@ -104,21 +101,7 @@ function ImageUploader({ label, hint, currentUrl, aspect, onUploaded }) {
   );
 }
 
-function StatusBanner({ artisan, user }) {
-  // L'e-mail est facultatif : ne réclamer sa confirmation qu'à ceux qui en ont
-  // renseigné un. Sinon on demanderait de cliquer un lien jamais envoyé.
-  if (user?.email && !user.isEmailVerified) {
-    return (
-      <Alert tone="amber">
-        <span className="flex items-start gap-2">
-          <MailWarning className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          Confirmez votre adresse e-mail depuis le message que nous vous avons envoyé : c'est
-          ce qui vous permettra de réinitialiser votre mot de passe en cas d'oubli.
-        </span>
-      </Alert>
-    );
-  }
-
+function StatusBanner({ artisan }) {
   if (artisan.status === 'rejected') {
     return (
       <Alert>
@@ -235,27 +218,60 @@ function PresentationForm({ artisan, onSave, saving }) {
   );
 }
 
-function FirstServiceForm() {
+function RealisationsForm() {
   const { data: services } = useListMyServicesQuery();
   const [createService, { isLoading }] = useCreateMyServiceMutation();
-  const [form, setForm] = useState({ title: '', description: '', price: '', priceUnit: 'forfait' });
+  const [deleteService] = useDeleteMyServiceMutation();
+  const [uploadMedia, { isLoading: uploading }] = useUploadMediaMutation();
+  const photoInput = useRef(null);
+
+  const [photos, setPhotos] = useState([]);
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    price: '',
+    priceUnit: 'forfait',
+    durationMin: '',
+  });
   const [error, setError] = useState(null);
 
   const list = services ?? [];
 
+  const addPhoto = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    try {
+      const media = await uploadMedia(file).unwrap();
+      setPhotos((current) => [...current, { id: media.id, url: media.url }]);
+    } catch (uploadError) {
+      setError(errorMessage(uploadError, "L'envoi de la photo a échoué."));
+    } finally {
+      event.target.value = '';
+    }
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     setError(null);
+    if (photos.length === 0) {
+      setError('Ajoutez au moins une photo : c’est ce que le client regarde en premier.');
+      return;
+    }
     try {
       await createService({
         title: form.title,
         description: form.description,
-        price: Number(form.price),
+        // Prix vide = « sur devis ». On n'envoie pas 0, qui signifierait gratuit.
+        ...(String(form.price).trim() ? { price: Number(form.price) } : {}),
         priceUnit: form.priceUnit,
+        ...(String(form.durationMin).trim() ? { durationMin: Number(form.durationMin) } : {}),
+        media: photos.map((photo) => photo.id),
       }).unwrap();
-      setForm({ title: '', description: '', price: '', priceUnit: 'forfait' });
+      setForm({ title: '', description: '', price: '', priceUnit: 'forfait', durationMin: '' });
+      setPhotos([]);
     } catch (createError) {
-      setError(errorMessage(createError, "La prestation n'a pas pu être créée."));
+      setError(errorMessage(createError, "La réalisation n'a pas pu être publiée."));
     }
   };
 
@@ -266,14 +282,33 @@ function FirstServiceForm() {
           {list.map((service) => (
             <li
               key={service._id}
-              className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3"
+              className="flex items-center gap-3 rounded-xl bg-slate-50 p-3"
             >
-              <span className="min-w-0">
+              {service.media?.[0]?.url ? (
+                <img
+                  src={mediaUrl(service.media[0].url)}
+                  alt=""
+                  className="size-16 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <span className="size-16 shrink-0 rounded-lg bg-slate-200" />
+              )}
+              <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium text-slate-900">{service.title}</span>
                 <span className="text-sm text-slate-500">
-                  {formatPrice(service.price)} {PRICE_UNITS[service.priceUnit] ?? ''}
+                  {service.price != null
+                    ? `${formatPrice(service.price)} ${PRICE_UNITS[service.priceUnit] ?? ''}`
+                    : 'Sur devis'}
+                  {service.media?.length > 1 ? ` · ${service.media.length} photos` : ''}
                 </span>
               </span>
+              <button
+                type="button"
+                onClick={() => deleteService(service._id).unwrap().catch(() => {})}
+                className="shrink-0 text-sm font-medium text-red-600 hover:underline"
+              >
+                Retirer
+              </button>
             </li>
           ))}
         </ul>
@@ -281,14 +316,57 @@ function FirstServiceForm() {
 
       <form onSubmit={submit} className="flex flex-col gap-4">
         {error && <Alert>{error}</Alert>}
-        <Field label="Intitulé" required>
+
+        <div>
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">
+            Photos<span className="ml-0.5 text-red-600">*</span>
+          </span>
+          <div className="flex flex-wrap gap-3">
+            {photos.map((photo) => (
+              <span key={photo.id} className="relative">
+                <img src={mediaUrl(photo.url)} alt="" className="size-24 rounded-xl object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setPhotos((current) => current.filter((p) => p.id !== photo.id))}
+                  className="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-slate-900 text-xs text-white"
+                  aria-label="Retirer cette photo"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+            {photos.length < 10 && (
+              <>
+                <input
+                  ref={photoInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={addPhoto}
+                  className="hidden"
+                  aria-label="Ajouter une photo"
+                />
+                <button
+                  type="button"
+                  onClick={() => photoInput.current?.click()}
+                  disabled={uploading}
+                  className="flex size-24 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-300 text-slate-500 hover:bg-slate-50"
+                >
+                  <ImageIcon className="size-5" aria-hidden="true" />
+                  <span className="text-xs">{uploading ? 'Envoi…' : 'Ajouter'}</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        <Field label="Nom de la réalisation" required>
           <Input
             value={form.title}
             required
             minLength={3}
             maxLength={100}
             onChange={(event) => setForm({ ...form, title: event.target.value })}
-            placeholder="Pose de carrelage"
+            placeholder="Braids Butterfly, Table en bois massif…"
           />
         </Field>
         <Field label="Description">
@@ -300,11 +378,10 @@ function FirstServiceForm() {
           />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Prix (FCFA)" required>
+          <Field label="Prix (FCFA)" hint="Facultatif — vide = sur devis.">
             <Input
               type="number"
               min="0"
-              required
               value={form.price}
               onChange={(event) => setForm({ ...form, price: event.target.value })}
             />
@@ -322,8 +399,17 @@ function FirstServiceForm() {
             </Select>
           </Field>
         </div>
+        <Field label="Durée de réalisation (minutes)" hint="Facultatif.">
+          <Input
+            type="number"
+            min="5"
+            value={form.durationMin}
+            onChange={(event) => setForm({ ...form, durationMin: event.target.value })}
+            className="sm:w-48"
+          />
+        </Field>
         <Button type="submit" variant="secondary" loading={isLoading}>
-          Ajouter cette prestation
+          {list.length ? 'Ajouter cette réalisation' : 'Publier ma première réalisation'}
         </Button>
       </form>
     </div>
@@ -331,11 +417,9 @@ function FirstServiceForm() {
 }
 
 export default function ArtisanSpacePage() {
-  const user = useSelector(selectUser);
   const { data, isLoading, isError, error } = useGetMyArtisanQuery();
   const { data: services } = useListMyServicesQuery();
   const [updateProfile, { isLoading: isSaving }] = useUpdateMyProfileMutation();
-  const [addGalleryMedia] = useAddGalleryMediaMutation();
 
   if (isLoading) return <Loading label="Chargement de votre fiche…" />;
   if (isError) {
@@ -378,7 +462,7 @@ export default function ArtisanSpacePage() {
       </div>
 
       <div className="mb-6">
-        <StatusBanner artisan={artisan} user={user} />
+        <StatusBanner artisan={artisan} />
       </div>
 
       {!isPublished && (
@@ -433,7 +517,7 @@ export default function ArtisanSpacePage() {
           title="Vos prestations"
           description="Annoncez au moins un tarif : les clients filtrent beaucoup par prix."
         >
-          <FirstServiceForm />
+          <RealisationsForm />
         </ChecklistItem>
 
         <ChecklistItem
@@ -450,19 +534,6 @@ export default function ArtisanSpacePage() {
           />
         </ChecklistItem>
 
-        <ChecklistItem
-          done={false}
-          optional
-          title="Galerie de réalisations"
-          description="Vos photos de chantiers convainquent mieux que n'importe quel texte."
-        >
-          <ImageUploader
-            label="Ajouter une réalisation"
-            aspect="size-32"
-            hint="Ajoutez vos photos une par une."
-            onUploaded={(url, media) => addGalleryMedia({ mediaId: media?.id, url }).unwrap().catch(() => {})}
-          />
-        </ChecklistItem>
       </div>
 
       <div className="mt-10">
