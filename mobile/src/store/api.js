@@ -16,8 +16,23 @@ function resolveBaseUrl() {
   return host ? `http://${host}:5000/api/v1` : 'http://localhost:5000/api/v1';
 }
 
+/**
+ * Réveille le serveur, mis en veille par l'hébergeur après une période sans
+ * trafic. Appelé au lancement : le démarrage se fait pendant que l'utilisateur
+ * navigue, et non pendant qu'il attend, bouton figé, la fin de son inscription.
+ * Sans importance si l'appel échoue — c'est un simple coup de sonnette.
+ */
+export function wakeUpServer() {
+  const base = resolveBaseUrl();
+  fetch(`${base}/health`).catch(() => {});
+}
+
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: resolveBaseUrl(),
+  // Sans plafond, une requête partie dans le vide fait tourner l'écran
+  // indéfiniment. Large tout de même : un serveur qui sort de veille peut
+  // mettre une bonne minute à répondre.
+  timeout: 70000,
   prepareHeaders: (headers, { getState }) => {
     // Indique au serveur de remettre le refresh token dans le corps de la
     // réponse : une application native n'a pas de cookie pour le recevoir.

@@ -27,7 +27,20 @@ const isNativeClient = (req) => req.get('x-client-type') === 'mobile';
 const register = catchAsync(async (req, res) => {
   const { user, verificationCode } = await authService.register(req.body);
 
-  const data = { user: user.toPublicJSON(), emailSent: Boolean(verificationCode) };
+  // L'inscription ouvre directement la session : demander au client de
+  // rappeler /auth/login juste après doublait l'attente sur le bouton.
+  const { accessToken, refreshToken } = await authService.issueSession(user, req);
+  const native = isNativeClient(req);
+  if (!native) {
+    res.cookie(authService.REFRESH_COOKIE, refreshToken, authService.cookieOptions());
+  }
+
+  const data = {
+    user: user.toPublicJSON(),
+    emailSent: Boolean(verificationCode),
+    accessToken,
+    ...(native && { refreshToken }),
+  };
   if (!env.isProduction) data.dev = { verificationCode };
 
   res.status(201).json(

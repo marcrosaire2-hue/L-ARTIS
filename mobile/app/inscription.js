@@ -54,6 +54,9 @@ export default function RegisterScreen() {
   // Compte créé mais session non obtenue : on ne peut plus rejouer
   // l'inscription (le numéro est pris), il faut aiguiller vers la connexion.
   const [created, setCreated] = useState(null);
+  // Attente anormalement longue : le serveur est probablement en train de
+  // sortir de veille. On le dit plutôt que de laisser tourner un rond.
+  const [slow, setSlow] = useState(false);
 
   const { data: tradesPage } = useListTradesQuery({ categoryId }, { skip: !categoryId });
   const { data: districts } = useListDistrictsQuery(commune, { skip: !commune });
@@ -100,6 +103,15 @@ export default function RegisterScreen() {
     setError(null);
     if (!validate()) return;
 
+    // L'hébergeur met le serveur en veille après une période sans trafic : la
+    // première requête attend son réveil. Sans un mot, l'utilisateur croit
+    // l'application bloquée et ferme tout — alors que son compte se crée.
+    const slowTimer = setTimeout(() => setSlow(true), 6000);
+    const done = () => {
+      clearTimeout(slowTimer);
+      setSlow(false);
+    };
+
     const body = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -122,21 +134,29 @@ export default function RegisterScreen() {
     try {
       account = await registerUser(body).unwrap();
     } catch (registerError) {
+      done();
       setError(errorMessage(registerError, "L'inscription a échoué."));
+      // 409 : le compte a été créé lors d'un essai précédent resté sans
+      // réponse. Le refaire est impossible, il faut se connecter.
+      if (registerError?.status === 409) setCreated({ phone: phone.trim(), existing: true });
       return;
     }
 
     // Le compte existe désormais : plus rien ne doit ramener au formulaire,
     // une seconde tentative buterait sur « ce numéro existe déjà ».
-    try {
-      const session = await login({ identifier: phone.trim(), password }).unwrap();
-      dispatch(credentialsReceived(session));
-    } catch {
-      // Sans session, le règlement ne peut pas être validé : on l'annonce
-      // plutôt que d'y envoyer l'utilisateur pour l'y bloquer.
-      setCreated({ phone: phone.trim() });
-      return;
+    if (account?.accessToken) {
+      dispatch(credentialsReceived(account));
+    } else {
+      // API antérieure, qui n'ouvrait pas la session à l'inscription.
+      try {
+        dispatch(credentialsReceived(await login({ identifier: phone.trim(), password }).unwrap()));
+      } catch {
+        done();
+        setCreated({ phone: phone.trim() });
+        return;
+      }
     }
+    done();
 
     router.replace({
       pathname: '/reglement',
@@ -159,8 +179,12 @@ export default function RegisterScreen() {
       <AuthShell
         heroSource={role === 'artisan' ? require('../assets/artisan.jpg') : require('../assets/client.jpg')}
         kicker="Compte créé"
-        title="Votre compte est créé"
-        subtitle="La connexion automatique n'a pas abouti. Connectez-vous avec votre numéro pour lire et valider le règlement, dernière étape de votre inscription."
+        title={created.existing ? 'Ce compte existe déjà' : 'Votre compte est créé'}
+        subtitle={
+          created.existing
+            ? "Ce numéro a déjà un compte : votre inscription précédente a abouti, même si l'écran ne l'avait pas montré. Connectez-vous pour continuer."
+            : "La connexion automatique n'a pas abouti. Connectez-vous avec votre numéro pour lire et valider le règlement, dernière étape de votre inscription."
+        }
       >
         <Button
           label="Se connecter"
@@ -203,6 +227,15 @@ export default function RegisterScreen() {
       {error ? (
         <View style={styles.errorBox} accessibilityRole="alert">
           <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
+
+      {slow ? (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            Le serveur sort de veille, cela peut prendre jusqu'à une minute. Ne fermez pas
+            l'application : votre compte est en cours de création.
+          </Text>
         </View>
       ) : null}
 
@@ -597,6 +630,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   errorText: { ...typography.muted, color: colors.danger },
+  infoBox: {
+    backgroundColor: colors.brandSurface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  infoText: { ...typography.muted, color: colors.brandDark },
   artisanNote: {
     ...typography.muted,
     backgroundColor: colors.brandSurface,

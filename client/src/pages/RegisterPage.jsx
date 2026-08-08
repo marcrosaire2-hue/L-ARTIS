@@ -254,9 +254,12 @@ export default function RegisterPage() {
       // parti : le serveur le dit via emailSent.
       const verify = account?.emailSent ? '1' : '0';
 
-      // Connexion immédiate, puis lecture / validation du règlement.
+      // L'inscription ouvre déjà la session : pas de second appel.
+      // Le repli couvre une API antérieure qui ne la renvoyait pas.
       try {
-        const session = await login({ identifier: values.phone, password: values.password }).unwrap();
+        const session = account?.accessToken
+          ? account
+          : await login({ identifier: values.phone, password: values.password }).unwrap();
         dispatch(credentialsReceived(session));
         navigate(
           `/reglement/${role}?accept=1&verify=${verify}&email=${encodeURIComponent(email)}`,

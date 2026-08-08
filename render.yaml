@@ -21,6 +21,11 @@ services:
         value: /api/v1
       - key: COOKIE_SECURE
         value: "true"
+      # Render bloque les ports SMTP sortants : laisser false tant qu'aucun
+      # fournisseur d'e-mail HTTP n'est branché, sinon l'inscription attend
+      # un timeout SMTP et les écrans de vérification n'aboutissent jamais.
+      - key: EMAIL_VERIFICATION_ENABLED
+        value: "false"
       - key: CLIENT_URL
         value: https://lartis-client-fx8k.onrender.com
       - key: ADMIN_URL

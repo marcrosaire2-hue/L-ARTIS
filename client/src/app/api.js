@@ -15,6 +15,10 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl,
   // Le refresh token voyage dans un cookie httpOnly
   credentials: 'include',
+  // Sans plafond, une requête partie dans le vide laisse le bouton tourner
+  // indéfiniment. Large : l'hébergeur met le serveur en veille, et son réveil
+  // peut prendre une bonne minute.
+  timeout: 70000,
   prepareHeaders: (headers, { getState }) => {
     const token = getState().auth.accessToken;
     if (token) headers.set('authorization', `Bearer ${token}`);

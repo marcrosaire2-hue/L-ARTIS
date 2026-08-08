@@ -21,6 +21,9 @@ export const authApi = api.injectEndpoints({
     register: builder.mutation({
       query: (body) => ({ url: '/auth/register', method: 'POST', body }),
       transformResponse: unwrapData,
+      // L'inscription ouvre la session : le jeton doit être rangé comme
+      // après une connexion, sans quoi le compte serait perdu au relancement.
+      onQueryStarted: persistSession,
     }),
     login: builder.mutation({
       query: (body) => ({ url: '/auth/login', method: 'POST', body }),

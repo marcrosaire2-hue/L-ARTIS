@@ -88,6 +88,9 @@ export function errorMessage(error, fallback = 'Une erreur est survenue.') {
   if (error.status === 'FETCH_ERROR') {
     return "Impossible de joindre le serveur. Vérifiez votre connexion.";
   }
+  if (error.status === 'TIMEOUT_ERROR') {
+    return "Le serveur met trop de temps à répondre. Réessayez dans un instant.";
+  }
   return fallback;
 }
 

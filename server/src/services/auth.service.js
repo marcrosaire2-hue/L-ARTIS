@@ -141,15 +141,21 @@ async function register({ email, password, firstName, lastName, phone, role, art
     throw new ApiError(400, 'Le numéro de téléphone est obligatoire');
   }
 
-  if (await User.exists({ phone: normalizedPhone })) {
-    throw new ApiError(409, 'Un compte existe déjà avec ce numéro de téléphone');
-  }
-
   const normalizedEmail = email ? String(email).trim().toLowerCase() : '';
   if (!normalizedEmail) {
     throw new ApiError(400, "L'adresse e-mail est obligatoire");
   }
-  if (await User.exists({ email: normalizedEmail })) {
+
+  // Les deux vérifications partent ensemble : enchaînées, elles coûtaient
+  // deux allers-retours à la base, sur une liaison qui n'est pas rapide.
+  const [phoneTaken, emailTaken] = await Promise.all([
+    User.exists({ phone: normalizedPhone }),
+    User.exists({ email: normalizedEmail }),
+  ]);
+  if (phoneTaken) {
+    throw new ApiError(409, 'Un compte existe déjà avec ce numéro de téléphone');
+  }
+  if (emailTaken) {
     throw new ApiError(409, 'Un compte existe déjà avec cette adresse e-mail');
   }
 
@@ -246,6 +252,21 @@ async function createArtisanProfile(user, artisanData) {
   });
 
   return artisan;
+}
+
+/**
+ * Ouvre une session pour un utilisateur déjà identifié.
+ *
+ * Utilisé juste après l'inscription : refaire une connexion complète
+ * imposait un second aller-retour et une comparaison bcrypt inutile, alors
+ * qu'on vient de créer le compte et qu'on sait déjà qui il est. Sur une
+ * liaison lente, ce second appel doublait l'attente devant un bouton figé.
+ */
+async function issueSession(user, req) {
+  const { refreshToken } = await createSession(user, req);
+  user.lastLoginAt = new Date();
+  await user.save();
+  return { accessToken: signAccessToken(user), refreshToken };
 }
 
 /* ------------------------------------------------------------------ */
@@ -551,6 +572,7 @@ async function acceptTerms(userId) {
 
 module.exports = {
   register,
+  issueSession,
   login,
   refresh,
   logout,
