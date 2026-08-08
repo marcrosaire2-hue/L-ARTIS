@@ -8,7 +8,7 @@
  *
  * Ce qui disparaît : le compte, son profil, ses sessions, ses favoris, ses
  * notifications, ses avis (avec recalcul des notes concernées) et, pour un
- * artisan, sa fiche, ses prestations, sa galerie et ses médias.
+ * artisan, sa fiche, ses réalisations et ses photos (fichiers compris).
  *
  * Ce qui subsiste : les DEVIS. Ils constituent l'historique commercial de
  * l'autre partie, qui n'a pas à perdre ses traces parce que son interlocuteur
@@ -31,6 +31,7 @@ const {
 } = require('../models');
 const { ROLES } = require('../constants');
 const { recalculateRating } = require('./review.service');
+const { removeMediaFile } = require('./upload.service');
 
 /**
  * Efface toutes les données rattachées à un compte.
@@ -64,6 +65,17 @@ async function purgeUserData(userId, role) {
     await Client.deleteMany({ userId });
   }
 
+  // Les fichiers partent avec les documents : effacer seulement les documents
+  // Media laissait les photos chez l'hébergeur, facturé au volume, sans plus
+  // aucune trace permettant de les retrouver.
+  const media = await Media.find({ uploadedBy: userId }).select('_id').lean();
+  await Promise.all(
+    media.map((item) =>
+      removeMediaFile(item._id).catch(() => {
+        /* hébergeur indisponible : le compte est effacé quand même */
+      })
+    )
+  );
   await Media.deleteMany({ uploadedBy: userId });
   await User.deleteOne({ _id: userId });
 

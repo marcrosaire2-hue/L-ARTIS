@@ -213,10 +213,10 @@ function Footer() {
             Mentions légales
           </Link>
           <Link to="/reglement/client" className="hover:text-slate-900">
-            Règlement client
+            Règlement clients
           </Link>
           <Link to="/reglement/artisan" className="hover:text-slate-900">
-            Règlement artisan
+            Règlement artisans
           </Link>
         </nav>
       </Container>

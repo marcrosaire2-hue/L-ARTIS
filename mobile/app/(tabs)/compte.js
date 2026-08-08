@@ -3,12 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useRouter } from 'expo-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  AlertBox,
-  Button,
-  Field,
-  TextField,
-} from '../../src/components/ui';
+import { Button, Field, TextField } from '../../src/components/ui';
 import {
   useDeleteAccountMutation,
   useLogoutMutation,
@@ -79,6 +74,31 @@ export default function AccountScreen() {
     );
   }
 
+  if (!user.termsAcceptedAt) {
+    return (
+      <View style={[styles.screen, styles.centered, { paddingTop: insets.top }]}>
+        <Text style={typography.heading}>Règlement à valider</Text>
+        <Text style={[typography.muted, { marginVertical: spacing.md, textAlign: 'center' }]}>
+          Avant d’accéder à votre compte, lisez et validez le règlement{' '}
+          {user.role === 'artisan' ? 'artisans' : 'clients'}.
+        </Text>
+        <Button
+          label="Lire et valider"
+          onPress={() =>
+            router.replace({
+              pathname: '/reglement',
+              params: {
+                audience: user.role === 'artisan' ? 'artisan' : 'client',
+                accept: '1',
+                email: user.email || '',
+              },
+            })
+          }
+        />
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.screen}
@@ -101,33 +121,12 @@ export default function AccountScreen() {
         <View style={styles.row}>
           <Text style={styles.rowLabel}>E-mail</Text>
           <Text style={styles.rowValue}>{user.email || 'Non renseigné'}</Text>
-          {user.email && !user.isEmailVerified ? (
-            <Text style={styles.warn}>Non vérifiée</Text>
-          ) : null}
         </View>
         {user.phone ? (
           <View style={styles.row}>
             <Text style={styles.rowLabel}>Téléphone</Text>
             <Text style={styles.rowValue}>{user.phone}</Text>
           </View>
-        ) : null}
-
-        {user.email && !user.isEmailVerified ? (
-          <>
-            <AlertBox tone="amber">
-              Un code a été envoyé à votre e-mail. Saisissez-le pour vérifier votre adresse.
-            </AlertBox>
-            <Button
-              label="Saisir le code"
-              variant="secondary"
-              onPress={() =>
-                router.push({
-                  pathname: '/verification-email',
-                  params: { email: user.email },
-                })
-              }
-            />
-          </>
         ) : null}
       </View>
 
@@ -196,12 +195,15 @@ export default function AccountScreen() {
           onPress={() =>
             router.push({
               pathname: '/reglement',
-              params: { audience: termsAudience },
+              // force=0 : simple consultation, sans repasser par l'acceptation.
+              params: { audience: termsAudience, force: '0' },
             })
           }
           style={({ pressed }) => [styles.menuItem, pressed && { opacity: 0.92 }]}
         >
-          <Text style={styles.linkTitle}>Règlement d'utilisation</Text>
+          <Text style={styles.linkTitle}>
+            Règlement {termsAudience === 'artisan' ? 'artisans' : 'clients'}
+          </Text>
           <Text style={styles.chevron}>→</Text>
         </Pressable>
       </View>
@@ -317,7 +319,6 @@ const styles = StyleSheet.create({
   row: { gap: 2 },
   rowLabel: { ...typography.small, textTransform: 'uppercase', fontWeight: '700' },
   rowValue: { ...typography.body },
-  warn: { ...typography.small, color: '#b45309', fontWeight: '600' },
   linkTitle: { ...typography.body, fontWeight: '700' },
   linkCta: { ...typography.small, color: colors.brand, fontWeight: '700', marginTop: 6 },
   dangerCard: { borderColor: 'rgba(232,93,59,0.35)', marginTop: spacing.lg },

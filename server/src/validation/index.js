@@ -105,27 +105,30 @@ const artisanValidation = {
     body('legal.rccm').optional().isString().isLength({ max: 60 }),
     body('legal.ifu').optional().isString().isLength({ max: 40 }),
   ],
+  // Réalisation : le prix est facultatif — « sur devis » est une réponse
+  // légitime pour beaucoup de métiers, l'exiger poussait à saisir un chiffre
+  // faux que le client prenait ensuite pour un engagement.
   serviceCreate: [
-    body('title').trim().isLength({ min: 3, max: 100 }),
+    body('title').trim().isLength({ min: 3, max: 100 }).withMessage('Titre : 3 à 100 caractères'),
     body('description').optional().isLength({ max: 2000 }),
-    body('price').isFloat({ min: 0 }).withMessage('Prix requis'),
+    body('price').optional({ values: 'null' }).isFloat({ min: 0 }).withMessage('Prix invalide'),
     body('priceUnit').optional().isIn(['heure', 'jour', 'forfait', 'projet']),
-    body('durationMin').optional().isInt({ min: 5 }),
+    body('durationMin').optional({ values: 'null' }).isInt({ min: 5 }),
     body('trade').optional().custom(isObjectId),
-    body('images').optional().isArray({ max: 10 }),
+    body('media').optional().isArray({ max: 10 }).withMessage('Maximum 10 photos'),
+    body('media.*').custom(isObjectId).withMessage('Photo invalide'),
   ],
   serviceId: [param('id').custom(isObjectId)],
   serviceUpdate: [
     param('id').custom(isObjectId),
     body('title').optional().isLength({ min: 3, max: 100 }),
-    body('price').optional().isFloat({ min: 0 }),
+    body('description').optional().isLength({ max: 2000 }),
+    body('price').optional({ values: 'null' }).isFloat({ min: 0 }),
+    body('priceUnit').optional().isIn(['heure', 'jour', 'forfait', 'projet']),
+    body('durationMin').optional({ values: 'null' }).isInt({ min: 5 }),
+    body('media').optional().isArray({ max: 10 }),
+    body('media.*').custom(isObjectId),
     body('isActive').optional().isBoolean(),
-  ],
-  gallery: [
-    body('items').isArray({ max: 30 }).withMessage('Maximum 30 médias'),
-    body('items.*.media').custom(isObjectId).withMessage('Média invalide'),
-    body('items.*.caption').optional().isLength({ max: 200 }),
-    body('items.*.sortOrder').optional().isInt({ min: 0 }),
   ],
   artisanId: [param('artisanId').isString().matches(/^[a-z0-9-]{2,100}$/).withMessage('Identifiant d\'artisan invalide')],
 };

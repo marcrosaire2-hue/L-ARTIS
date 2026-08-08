@@ -142,15 +142,21 @@ async function register({ email, password, firstName, lastName, phone, role, art
     throw new ApiError(400, 'Le numéro de téléphone est obligatoire');
   }
 
-  if (await User.exists({ phone: normalizedPhone })) {
-    throw new ApiError(409, 'Un compte existe déjà avec ce numéro de téléphone');
-  }
-
   const normalizedEmail = email ? String(email).trim().toLowerCase() : '';
   if (!normalizedEmail) {
     throw new ApiError(400, "L'adresse e-mail est obligatoire");
   }
-  if (await User.exists({ email: normalizedEmail })) {
+
+  // Les deux vérifications partent ensemble : enchaînées, elles coûtaient
+  // deux allers-retours à la base, sur une liaison qui n'est pas rapide.
+  const [phoneTaken, emailTaken] = await Promise.all([
+    User.exists({ phone: normalizedPhone }),
+    User.exists({ email: normalizedEmail }),
+  ]);
+  if (phoneTaken) {
+    throw new ApiError(409, 'Un compte existe déjà avec ce numéro de téléphone');
+  }
+  if (emailTaken) {
     throw new ApiError(409, 'Un compte existe déjà avec cette adresse e-mail');
   }
 
@@ -167,25 +173,47 @@ async function register({ email, password, firstName, lastName, phone, role, art
     accountStatus: ACCOUNT_STATUS.ACTIVE,
   });
 
-  if (role === ROLES.ARTISAN) {
-    if (!artisanData || !artisanData.businessName) {
-      await User.deleteOne({ _id: user._id });
-      throw new ApiError(400, 'Le nom commercial est obligatoire pour les artisans');
-    }
-    const artisan = await createArtisanProfile(user, artisanData);
+  // Le compte et son profil vont de pair : un utilisateur artisan sans fiche
+  // n'a pas d'espace de travail, et le numéro resterait pris — l'artisan ne
+  // pourrait même pas se réinscrire. En cas d'échec, on défait la création.
+  try {
+    if (role === ROLES.ARTISAN) {
+      if (!artisanData || !artisanData.businessName) {
+        throw new ApiError(400, 'Le nom commercial est obligatoire pour les artisans');
+      }
+      const artisan = await createArtisanProfile(user, artisanData);
 
-    // Notifie les administrateurs : profil en attente de validation
-    await notifyAdmins(
-      'artisan_validated',
-      'Nouvel artisan à valider',
-      `${artisan.displayName} a soumis son profil`,
-      { artisanId: String(artisan._id), url: '/admin/artisans' }
-    );
-  } else {
-    await Client.create({ userId: user._id });
+      // Notifie les administrateurs : profil en attente de validation.
+      // Accessoire au regard de l'inscription : son échec ne doit pas la faire
+      // échouer, le profil reste visible dans la file d'attente admin.
+      await notifyAdmins(
+        'artisan_validated',
+        'Nouvel artisan à valider',
+        `${artisan.displayName} a soumis son profil`,
+        { artisanId: String(artisan._id), url: '/admin/artisans' }
+      ).catch((error) => {
+        logger.error(`Notification admin impossible (artisan ${artisan._id}) : ${error.message}`);
+      });
+    } else {
+      await Client.create({ userId: user._id });
+    }
+  } catch (error) {
+    await User.deleteOne({ _id: user._id });
+    throw error;
   }
 
-  const verificationCode = await sendVerificationEmail(user);
+  // L'envoi du code ne conditionne pas la création du compte : un SMTP
+  // indisponible ferait échouer l'inscription APRÈS création, et la reprise
+  // buterait ensuite sur « ce numéro existe déjà ». Le code est renvoyable
+  // depuis l'écran de vérification (/auth/resend-verification).
+  let verificationCode = null;
+  if (env.emailVerification) {
+    try {
+      verificationCode = await sendVerificationEmail(user);
+    } catch (error) {
+      logger.error(`Code de vérification non envoyé à ${user.email} : ${error.message}`);
+    }
+  }
 
   logger.info(`Nouvel utilisateur : ${user.phone} (${role})`);
   return { user, verificationCode };
@@ -225,6 +253,21 @@ async function createArtisanProfile(user, artisanData) {
   });
 
   return artisan;
+}
+
+/**
+ * Ouvre une session pour un utilisateur déjà identifié.
+ *
+ * Utilisé juste après l'inscription : refaire une connexion complète
+ * imposait un second aller-retour et une comparaison bcrypt inutile, alors
+ * qu'on vient de créer le compte et qu'on sait déjà qui il est. Sur une
+ * liaison lente, ce second appel doublait l'attente devant un bouton figé.
+ */
+async function issueSession(user, req) {
+  const { refreshToken } = await createSession(user, req);
+  user.lastLoginAt = new Date();
+  await user.save();
+  return { accessToken: signAccessToken(user), refreshToken };
 }
 
 /* ------------------------------------------------------------------ */
@@ -356,6 +399,10 @@ async function isArtisanPendingValidation(userId) {
  * Client : e-mail de bienvenue immédiat.
  */
 async function verifyEmail({ code, email }) {
+  if (!env.emailVerification) {
+    throw new ApiError(503, "La vérification par e-mail est temporairement désactivée.");
+  }
+
   const normalizedCode = String(code || '').replace(/\s/g, '');
   if (!/^\d{6}$/.test(normalizedCode)) {
     throw new ApiError(400, 'Le code doit contenir 6 chiffres');
@@ -411,6 +458,10 @@ async function verifyEmail({ code, email }) {
  * Anti-énumération : réponse OK même si le compte n'existe pas.
  */
 async function resendVerificationEmail(email) {
+  if (!env.emailVerification) {
+    throw new ApiError(503, "La vérification par e-mail est temporairement désactivée.");
+  }
+
   const normalized = String(email || '').trim().toLowerCase();
   if (!normalized) {
     throw new ApiError(400, "L'adresse e-mail est obligatoire");
@@ -524,20 +575,28 @@ async function findUserByEmail(email) {
   return User.findOne({ email });
 }
 
+/**
+ * Enregistre l'acceptation du règlement (clients ou artisans) après lecture.
+ * Obligatoire avant de poursuivre le parcours post-inscription.
+ */
 async function acceptTerms(userId) {
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, 'Utilisateur introuvable');
   if (user.role === ROLES.ADMIN) {
     throw new ApiError(400, 'Non applicable aux administrateurs');
   }
+
   user.termsAcceptedAt = new Date();
   user.termsVersion = TERMS_VERSION;
   await user.save();
+
+  logger.info(`Règlement accepté : ${user.phone || user.email} (v${TERMS_VERSION})`);
   return user;
 }
 
 module.exports = {
   register,
+  issueSession,
   login,
   refresh,
   logout,

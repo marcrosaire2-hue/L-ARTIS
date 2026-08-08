@@ -65,8 +65,9 @@ function RequireAuth({ role, children }) {
   if (role && user?.role !== role) {
     return <Navigate to="/compte" replace />;
   }
-  if (!user?.termsAcceptedAt && user?.role !== 'admin') {
-    const audience = user?.role === 'artisan' ? 'artisan' : 'client';
+  // Règlement non encore accepté → protocole de lecture / validation.
+  if (user && user.role !== 'admin' && !user.termsAcceptedAt) {
+    const audience = user.role === 'artisan' ? 'artisan' : 'client';
     return (
       <Navigate
         to={`/reglement/${audience}?accept=1`}
@@ -106,7 +107,6 @@ export default function App() {
         />
         <Route path="mot-de-passe-oublie" element={<ForgotPasswordPage />} />
         <Route path="reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
-
         <Route path="mentions-legales" element={<MentionsLegalesPage />} />
         <Route path="reglement/:audience" element={<ReglementPage />} />
 

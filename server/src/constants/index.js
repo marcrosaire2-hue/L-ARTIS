@@ -75,6 +75,7 @@ const PAGINATION = Object.freeze({
   MAX_LIMIT: 50,
 });
 
+/** Version du règlement L-ARTIS (clients / artisans) — alignée côté front. */
 const TERMS_VERSION = '2026-08-01';
 
 module.exports = {

@@ -42,6 +42,11 @@ yarn-error.*
 
 android/
 ios/
-dist/
 dist-apk/
+
+# builds locaux (95 Mo : ne doit pas entrer dans le dépôt)
+*.apk
+*.aab
+
+# local env
 .env

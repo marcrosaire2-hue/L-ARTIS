@@ -1,7 +1,7 @@
 /**
  * Routes artisans.
  * Public : recherche + fiche publique + avis.
- * Propriétaire (artisan connecté) : profil, services, galerie, stats, devis reçus.
+ * Propriétaire (artisan connecté) : profil, réalisations, stats, devis reçus.
  */
 const express = require('express');
 const router = express.Router();
@@ -25,10 +25,6 @@ router.get('/me/services', protect, authorize('artisan'), requireArtisanProfile,
 router.post('/me/services', protect, authorize('artisan'), requireArtisanProfile, validate(artisanValidation.serviceCreate), artisanController.createMyService);
 router.put('/services/:id', protect, authorize('artisan'), requireArtisanProfile, validate(artisanValidation.serviceUpdate), artisanController.updateMyService);
 router.delete('/services/:id', protect, authorize('artisan'), requireArtisanProfile, validate(artisanValidation.serviceId), artisanController.deleteMyService);
-
-router.put('/me/gallery', protect, authorize('artisan'), requireArtisanProfile, validate(artisanValidation.gallery), artisanController.updateMyGallery);
-router.post('/me/gallery/media', protect, authorize('artisan'), requireArtisanProfile, artisanController.addMediaToGallery);
-router.delete('/me/gallery/items/:itemId', protect, authorize('artisan'), requireArtisanProfile, artisanController.removeGalleryItem);
 
 // --- Public ---
 router.get('/', validate(artisanValidation.search), artisanController.searchArtisans);

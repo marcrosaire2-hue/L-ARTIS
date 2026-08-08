@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
-  AlertTriangle,
   Bell,
   ClipboardList,
   CreditCard,
@@ -138,7 +137,6 @@ export default function AccountPage() {
               <Mail className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
               <dt className="sr-only">Adresse e-mail</dt>
               <dd className="text-slate-700">{user?.email}</dd>
-              {!user?.isEmailVerified && <Badge tone="amber">Non vérifiée</Badge>}
             </div>
             {user?.phone && (
               <div className="flex items-center gap-3">
@@ -149,22 +147,6 @@ export default function AccountPage() {
             )}
           </dl>
 
-          {!user?.isEmailVerified && (
-            <div className="mt-6">
-              <Alert tone="amber">
-                <span className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                  Votre adresse e-mail n'est pas encore confirmée.{' '}
-                  <Link
-                    to={`/verification-email?email=${encodeURIComponent(user?.email || '')}`}
-                    className="font-medium underline"
-                  >
-                    Vérifier mon e-mail
-                  </Link>
-                </span>
-              </Alert>
-            </div>
-          )}
         </Card>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">

@@ -1,61 +1,80 @@
-/** Mentions légales — L-ARTIS (Bénin). Informations éditeur à compléter. */
-
-export const MENTIONS_LEGALES = {
+/**
+ * Mentions légales — obligations d'identification du prestataire de services
+ * en ligne (Loi n° 2017-20 portant Code du numérique en République du Bénin,
+ * Livre IV — Commerce électronique).
+ */
+export const mentionsLegales = {
   title: 'Mentions légales',
-  updatedAt: '2026-08-01',
+  intro:
+    'Conformément à la loi n° 2017-20 du 20 avril 2018 portant Code du numérique en République du Bénin, et notamment aux dispositions relatives au commerce électronique et à l’identification des prestataires de services en ligne, les informations suivantes sont portées à la connaissance des utilisateurs de la plateforme L-ARTIS.',
   sections: [
     {
-      heading: '1. Éditeur du site',
+      title: '1. Éditeur de la plateforme',
       paragraphs: [
-        'Le site et l’application L-ARTIS sont édités par la société L-ARTIS SARL (dénomination provisoire), plateforme de mise en relation entre artisans et clients au Bénin.',
-        'Siège social : adresse à compléter, Cotonou, République du Bénin.',
-        'Registre du Commerce et du Crédit Mobilier (RCCM) : numéro à compléter.',
-        'Identifiant Fiscal Unique (IFU) : numéro à compléter.',
-        'Directeur de la publication : à compléter.',
-        'Contact : contact@lartis.bj (adresse à confirmer).',
+        'La plateforme L-ARTIS est éditée et exploitée en République du Bénin.',
+        'Dénomination : L-ARTIS',
+        'Nature de l’activité : place de marché numérique mettant en relation les artisans du Bénin et les clients à la recherche de prestations artisanales (mise en relation, présentation de profils, demandes de devis).',
+        'Pays d’établissement : République du Bénin',
+        'Adresse de contact : à compléter (siège / adresse de correspondance)',
+        'Adresse e-mail de contact : à compléter',
+        'Téléphone : à compléter',
+        'Numéro d’immatriculation au Registre du Commerce et du Crédit Mobilier (RCCM) : à compléter le cas échéant',
+        'Identifiant fiscal unique (IFU) : à compléter le cas échéant',
+        'Directeur de la publication : à compléter (nom et prénom du responsable)',
       ],
     },
     {
-      heading: '2. Hébergement',
+      title: '2. Hébergement',
       paragraphs: [
-        'L’hébergement des données et du site est assuré par un prestataire cloud dont les coordonnées seront publiées dès confirmation du contrat définitif.',
-        'Les données sont traitées conformément à la loi n° 2017-20 du 20 avril 2018 portant Code du numérique en République du Bénin, notamment en matière de protection des données à caractère personnel et de sécurité des systèmes d’information.',
+        'Les données de la plateforme sont hébergées auprès de prestataires techniques assurant l’accessibilité du service (hébergement applicatif et base de données).',
+        'Hébergeur applicatif : Render (Render Services, Inc.) — services cloud accessibles via render.com',
+        'Pour toute question relative à l’hébergement des données, contactez l’éditeur à l’adresse indiquée ci-dessus.',
       ],
     },
     {
-      heading: '3. Objet de la plateforme',
+      title: '3. Nature du service',
       paragraphs: [
-        'L-ARTIS est un service d’hébergement et de référencement d’artisans. La plateforme facilite la découverte de professionnels, la demande de devis, la messagerie et la publication d’avis.',
-        'L-ARTIS n’est pas partie aux contrats conclus entre clients et artisans. Chaque utilisateur agit sous sa propre responsabilité.',
+        'L-ARTIS est une plateforme de mise en relation. Elle ne vend pas elle-même les prestations artisanales affichées par les artisans inscrits.',
+        'Le contrat de prestation est conclu directement entre le client et l’artisan. L-ARTIS n’est pas partie à ce contrat, sauf disposition contraire expressément indiquée.',
+        'Conformément au Code du numérique, L-ARTIS met à disposition les informations nécessaires à l’identification des professionnels présents sur la plateforme et facilite l’échange entre les parties.',
       ],
     },
     {
-      heading: '4. Propriété intellectuelle',
+      title: '4. Propriété intellectuelle',
       paragraphs: [
-        'L’ensemble des éléments graphiques, textuels, logos, marques et logiciels composant L-ARTIS est protégé par le droit de la propriété intellectuelle.',
-        'Toute reproduction, représentation ou exploitation non autorisée est interdite, sous réserve des exceptions prévues par la loi béninoise et le Code du numérique.',
+        'L’ensemble des éléments composant la plateforme L-ARTIS (marque, logo, textes, interfaces, bases de données, code source) est protégé par le droit de la propriété intellectuelle.',
+        'Toute reproduction, représentation ou exploitation non autorisée est interdite, sous réserve des exceptions légales.',
+        'Les contenus publiés par les utilisateurs (photos, descriptions, avis) restent sous leur responsabilité ; en les publiant, ils concèdent à L-ARTIS une licence non exclusive d’affichage nécessaire au fonctionnement du service.',
       ],
     },
     {
-      heading: '5. Données personnelles',
+      title: '5. Données à caractère personnel',
       paragraphs: [
-        'Conformément au livre IV du Code du numérique (loi 2017-20), L-ARTIS traite les données personnelles nécessaires à la création de compte, à la mise en relation et à la sécurité du service.',
-        'Les utilisateurs disposent d’un droit d’accès, de rectification, d’opposition et de suppression dans les conditions prévues par la réglementation applicable. Pour exercer ces droits : contact@lartis.bj.',
-        'Les cookies et traceurs strictement nécessaires au fonctionnement du site peuvent être déposés sans consentement préalable ; les traceurs analytiques, le cas échéant, feront l’objet d’un recueil de consentement.',
+        'Le traitement des données personnelles est régi par le Livre V de la loi n° 2017-20 (protection des données à caractère personnel) et, le cas échéant, par l’Acte additionnel A/SA.1/01/10 de la CEDEAO relatif à la protection des données à caractère personnel.',
+        'Les finalités principales sont : création et gestion de compte, mise en relation, sécurité, vérification d’identité/e-mail, support et amélioration du service.',
+        'Les utilisateurs disposent notamment de droits d’accès, de rectification, d’effacement et d’opposition, dans les conditions prévues par la loi. Pour les exercer : contactez l’éditeur aux coordonnées ci-dessus, ou utilisez la fonction de suppression de compte dans l’espace personnel.',
+        'Les détails figurent également dans les règlements clients et artisans.',
       ],
     },
     {
-      heading: '6. Limitation de responsabilité',
+      title: '6. Responsabilité et signalement',
       paragraphs: [
-        'L-ARTIS s’efforce d’assurer l’exactitude des informations publiées mais ne garantit pas l’absence d’erreurs ou d’interruptions de service.',
-        'La responsabilité de L-ARTIS ne saurait être engagée pour les litiges survenus entre utilisateurs, ni pour les dommages indirects liés à l’utilisation de la plateforme.',
+        'L-ARTIS s’efforce d’assurer la disponibilité et la sécurité de la plateforme. Elle ne garantit pas l’absence d’interruption ni l’exactitude absolue de tous les contenus publiés par les utilisateurs.',
+        'En tant qu’hébergeur de contenus tiers au sens du Code du numérique, L-ARTIS n’a pas d’obligation générale de surveillance des informations stockées, mais agit promptement lorsqu’elle a connaissance d’un contenu manifestement illicite signalé.',
+        'Pour signaler un contenu illicite, un profil frauduleux ou un abus : utilisez les moyens de contact de l’éditeur ou les outils de signalement mis à disposition sur la plateforme.',
       ],
     },
     {
-      heading: '7. Droit applicable',
+      title: '7. Droit applicable et litiges',
       paragraphs: [
-        'Les présentes mentions sont régies par le droit béninois, en particulier la loi n° 2017-20 portant Code du numérique.',
-        'En cas de litige, et après tentative de résolution amiable, compétence est attribuée aux tribunaux du ressort de Cotonou, sous réserve des règles impératives de protection des consommateurs.',
+        'Les présentes mentions sont régies par le droit béninois, notamment la loi n° 2017-20 portant Code du numérique et la loi n° 2007-21 portant protection du consommateur, le cas échéant.',
+        'En cas de litige relatif à l’utilisation de la plateforme, une solution amiable sera recherchée en premier lieu. À défaut, les tribunaux compétents de la République du Bénin seront saisis.',
+      ],
+    },
+    {
+      title: '8. Mise à jour',
+      paragraphs: [
+        'Ces mentions légales peuvent être mises à jour pour tenir compte de l’évolution du service, de l’organisation de l’éditeur ou de la réglementation. La version publiée sur la plateforme fait foi.',
       ],
     },
   ],

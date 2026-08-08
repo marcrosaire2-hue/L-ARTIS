@@ -151,37 +151,27 @@ function TradePicker({ value, onToggle, error }) {
   );
 }
 
-function SuccessScreen({ email, devCode, role }) {
-  const navigate = useNavigate();
-
+function SuccessScreen({ email, role }) {
   return (
     <Card className="p-8 text-center">
       <CheckCircle2 className="mx-auto size-12 text-brand-600" aria-hidden="true" />
       <h1 className="mt-4 text-2xl font-bold text-slate-900">Compte créé</h1>
       <p className="mt-2 text-slate-600">
-        Un code à 6 chiffres a été envoyé à <strong>{email}</strong>. Saisissez-le pour
-        vérifier votre adresse.
+        Prochaine étape : lire et valider le règlement{' '}
+        {role === 'artisan' ? 'artisans' : 'clients'}, obligatoire selon le Code du numérique
+        au Bénin.
       </p>
       {role === 'artisan' && (
         <p className="mt-4 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800">
-          Après vérification, votre profil restera en attente de validation. Vous recevrez un
-          e-mail de bienvenue une fois le compte approuvé.
+          Ensuite, complétez votre fiche : elle sera publiée après validation par notre équipe.
         </p>
       )}
-      {devCode && (
-        <p className="mt-4 text-sm text-slate-500">
-          Environnement de développement — code :{' '}
-          <strong className="tracking-widest text-slate-800">{devCode}</strong>
-        </p>
-      )}
-      <Button
-        className="mt-6"
-        onClick={() =>
-          navigate(`/verification-email?email=${encodeURIComponent(email)}`, { replace: true })
-        }
+      <Link
+        to={`/reglement/${role}?accept=1&email=${encodeURIComponent(email)}`}
+        className="mt-6 inline-block"
       >
-        Saisir le code
-      </Button>
+        <Button>Lire et valider le règlement</Button>
+      </Link>
     </Card>
   );
 }
@@ -257,22 +247,26 @@ export default function RegisterPage() {
     };
 
     try {
-      const result = await registerUser(payload).unwrap();
-      setSuccess({
-        email: values.email.trim().toLowerCase(),
-        devCode: result?.dev?.verificationCode,
-      });
+      const account = await registerUser(payload).unwrap();
+      const email = values.email.trim().toLowerCase();
+      // L'étape de vérification n'a de sens que si un code est réellement
+      // parti : le serveur le dit via emailSent.
+      const verify = account?.emailSent ? '1' : '0';
 
-      // Connexion immédiate, puis saisie du code e-mail (envoyé à l'inscription).
+      // L'inscription ouvre déjà la session : pas de second appel.
+      // Le repli couvre une API antérieure qui ne la renvoyait pas.
       try {
-        const session = await login({ identifier: values.phone, password: values.password }).unwrap();
+        const session = account?.accessToken
+          ? account
+          : await login({ identifier: values.phone, password: values.password }).unwrap();
         dispatch(credentialsReceived(session));
         navigate(
-          `/verification-email?email=${encodeURIComponent(values.email.trim().toLowerCase())}`,
+          `/reglement/${role}?accept=1&verify=${verify}&email=${encodeURIComponent(email)}`,
           { replace: true }
         );
+        return;
       } catch {
-        /* l'écran de confirmation reste affiché */
+        setSuccess({ email });
       }
     } catch (error) {
       setFormError(errorMessage(error, "L'inscription a échoué."));
@@ -418,6 +412,28 @@ export default function RegisterPage() {
                 <Button type="submit" size="lg" loading={isLoading} className="mt-2">
                   Créer mon compte
                 </Button>
+
+                <p className="text-center text-xs leading-relaxed text-slate-500">
+                  En créant un compte, vous pourrez lire et devoir accepter le{' '}
+                  <Link
+                    to={`/reglement/${role}`}
+                    className="font-medium text-brand-700 hover:underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    règlement {role === 'artisan' ? 'artisans' : 'clients'}
+                  </Link>{' '}
+                  ainsi que les{' '}
+                  <Link
+                    to="/mentions-legales"
+                    className="font-medium text-brand-700 hover:underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    mentions légales
+                  </Link>
+                  , conformément au Code du numérique au Bénin.
+                </p>
 
                 <p className="text-center text-sm text-slate-600">
                   Déjà inscrit ?{' '}

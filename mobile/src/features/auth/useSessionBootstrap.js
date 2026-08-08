@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { credentialsReceived, sessionEnded } from './authSlice';
 import { useRefreshMutation } from './auth.api';
 import { readRefreshToken } from '../../lib/secureSession';
+import { wakeUpServer } from '../../store/api';
 
 /**
  * Restaure la session au lancement à partir du jeton conservé dans le
@@ -25,7 +26,14 @@ export function useSessionBootstrap() {
 
     (async () => {
       const stored = await readRefreshToken();
-      if (!stored) return dispatch(sessionEnded());
+      if (!stored) {
+        // Aucune session à restaurer : on réveille quand même le serveur, mis
+        // en veille par l'hébergeur après une période sans trafic. Il sera
+        // prêt quand l'utilisateur validera son inscription, au lieu de lui
+        // faire attendre le démarrage devant un bouton figé.
+        wakeUpServer();
+        return dispatch(sessionEnded());
+      }
 
       try {
         dispatch(credentialsReceived(await refresh(stored).unwrap()));

@@ -36,6 +36,12 @@ export default function VerifyEmailScreen() {
   const emailParam = typeof params.email === 'string' ? params.email : params.email?.[0];
   const email = (emailParam || sessionUser?.email || '').trim().toLowerCase();
 
+  // Destination une fois l'étape franchie (ou remise à plus tard) : un artisan
+  // qui vient de s'inscrire doit atterrir dans son espace, pas sur l'accueil.
+  const nextParam = typeof params.next === 'string' ? params.next : params.next?.[0];
+  const nextRoute =
+    nextParam || (sessionUser?.role === 'artisan' ? '/espace-artisan' : '/accueil');
+
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
   const [resend, { isLoading: resending }] = useResendVerificationMutation();
 
@@ -172,6 +178,10 @@ export default function VerifyEmailScreen() {
 
       <Pressable onPress={onResend} disabled={resending} style={styles.linkWrap}>
         <Text style={styles.link}>{resending ? 'Envoi…' : 'Renvoyer le code'}</Text>
+      </Pressable>
+
+      <Pressable onPress={() => router.replace(nextRoute)} style={styles.linkWrap}>
+        <Text style={styles.skip}>Plus tard</Text>
       </Pressable>
     </AuthShell>
   );

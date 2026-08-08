@@ -42,12 +42,22 @@ export default function RegisterScreen() {
   const [visible, setVisible] = useState(false);
   const [businessName, setBusinessName] = useState('');
   const [trades, setTrades] = useState([]);
+  // Les métiers choisis dans une autre catégorie ne sont plus rendus par la
+  // liste : sans leur libellé, ils deviendraient invisibles et impossibles à
+  // retirer. On garde donc le nom au moment du clic.
+  const [tradeLabels, setTradeLabels] = useState({});
   const [categoryId, setCategoryId] = useState('');
   const [department, setDepartment] = useState('');
   const [commune, setCommune] = useState('');
   const [district, setDistrict] = useState('');
   const [error, setError] = useState(null);
   const [fieldError, setFieldError] = useState({});
+  // Compte créé mais session non obtenue : on ne peut plus rejouer
+  // l'inscription (le numéro est pris), il faut aiguiller vers la connexion.
+  const [created, setCreated] = useState(null);
+  // Attente anormalement longue : le serveur est probablement en train de
+  // sortir de veille. On le dit plutôt que de laisser tourner un rond.
+  const [slow, setSlow] = useState(false);
 
   const { data: tradesPage } = useListTradesQuery({ categoryId }, { skip: !categoryId });
   const { data: districtsFromApi } = useListDistrictsQuery(commune, { skip: !commune });
@@ -71,10 +81,12 @@ export default function RegisterScreen() {
   const tradeItems = tradesPage?.items ?? [];
   const hasCatalogue = (categories ?? []).length > 0;
 
-  const toggleTrade = (id) => {
+  const toggleTrade = (trade) => {
+    const id = trade._id;
     setTrades((current) =>
       current.includes(id) ? current.filter((tradeId) => tradeId !== id) : [...current, id]
     );
+    setTradeLabels((current) => ({ ...current, [id]: trade.name }));
   };
 
   const validate = () => {
@@ -103,6 +115,15 @@ export default function RegisterScreen() {
     setError(null);
     if (!validate()) return;
 
+    // L'hébergeur met le serveur en veille après une période sans trafic : la
+    // première requête attend son réveil. Sans un mot, l'utilisateur croit
+    // l'application bloquée et ferme tout — alors que son compte se crée.
+    const slowTimer = setTimeout(() => setSlow(true), 6000);
+    const done = () => {
+      clearTimeout(slowTimer);
+      setSlow(false);
+    };
+
     const body = {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -121,23 +142,71 @@ export default function RegisterScreen() {
       }),
     };
 
+    let account;
     try {
-      await registerUser(body).unwrap();
-      try {
-        const session = await login({ identifier: phone.trim(), password }).unwrap();
-        dispatch(credentialsReceived(session));
-      } catch {
-        /* on continue vers la saisie du code même sans session */
-      }
-      // Code déjà envoyé par l'API à l'inscription → saisie immédiate.
-      router.replace({
-        pathname: '/verification-email',
-        params: { email: email.trim().toLowerCase() },
-      });
+      account = await registerUser(body).unwrap();
     } catch (registerError) {
+      done();
       setError(errorMessage(registerError, "L'inscription a échoué."));
+      // 409 : le compte a été créé lors d'un essai précédent resté sans
+      // réponse. Le refaire est impossible, il faut se connecter.
+      if (registerError?.status === 409) setCreated({ phone: phone.trim(), existing: true });
+      return;
     }
+
+    // Le compte existe désormais : plus rien ne doit ramener au formulaire,
+    // une seconde tentative buterait sur « ce numéro existe déjà ».
+    if (account?.accessToken) {
+      dispatch(credentialsReceived(account));
+    } else {
+      // API antérieure, qui n'ouvrait pas la session à l'inscription.
+      try {
+        dispatch(credentialsReceived(await login({ identifier: phone.trim(), password }).unwrap()));
+      } catch {
+        done();
+        setCreated({ phone: phone.trim() });
+        return;
+      }
+    }
+    done();
+
+    router.replace({
+      pathname: '/reglement',
+      params: {
+        audience: role,
+        accept: '1',
+        email: email.trim().toLowerCase(),
+        // L'étape de vérification n'a de sens que si un code est réellement
+        // parti. Le serveur le dit ; le jour où l'envoi refonctionne, l'étape
+        // réapparaît d'elle-même, sans rien changer ici.
+        verify: account?.emailSent ? '1' : '0',
+        // Premier passage : l'artisan enchaîne sur la configuration guidée.
+        onboarding: '1',
+      },
+    });
   };
+
+  if (created) {
+    return (
+      <AuthShell
+        heroSource={role === 'artisan' ? require('../assets/artisan.jpg') : require('../assets/client.jpg')}
+        kicker="Compte créé"
+        title={created.existing ? 'Ce compte existe déjà' : 'Votre compte est créé'}
+        subtitle={
+          created.existing
+            ? "Ce numéro a déjà un compte : votre inscription précédente a abouti, même si l'écran ne l'avait pas montré. Connectez-vous pour continuer."
+            : "La connexion automatique n'a pas abouti. Connectez-vous avec votre numéro pour lire et valider le règlement, dernière étape de votre inscription."
+        }
+      >
+        <Button
+          label="Se connecter"
+          onPress={() =>
+            router.replace({ pathname: '/connexion', params: { identifier: created.phone } })
+          }
+        />
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell
@@ -173,17 +242,38 @@ export default function RegisterScreen() {
         </View>
       ) : null}
 
+      {slow ? (
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            Le serveur sort de veille, cela peut prendre jusqu'à une minute. Ne fermez pas
+            l'application : votre compte est en cours de création.
+          </Text>
+        </View>
+      ) : null}
+
       <Field label="Prénom" required error={fieldError.firstName}>
-        <TextInput value={firstName} onChangeText={setFirstName} style={styles.input} />
+        <TextInput
+          value={firstName}
+          onChangeText={setFirstName}
+          maxLength={50}
+          autoComplete="given-name"
+          style={styles.input}
+        />
       </Field>
       <Field label="Nom" required error={fieldError.lastName}>
-        <TextInput value={lastName} onChangeText={setLastName} style={styles.input} />
+        <TextInput
+          value={lastName}
+          onChangeText={setLastName}
+          maxLength={50}
+          autoComplete="family-name"
+          style={styles.input}
+        />
       </Field>
       <Field
         label="Adresse e-mail"
         required
         error={fieldError.email}
-        hint="Un code de vérification vous sera envoyé à cette adresse."
+        hint="Obligatoire pour vérifier votre compte et récupérer votre mot de passe."
       >
         <TextInput
           value={email}
@@ -191,6 +281,7 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoComplete="email"
+          maxLength={254}
           style={styles.input}
         />
       </Field>
@@ -221,6 +312,7 @@ export default function RegisterScreen() {
             onChangeText={setPassword}
             secureTextEntry={!visible}
             autoCapitalize="none"
+            maxLength={72}
             style={[styles.input, styles.passwordInput]}
           />
           <Pressable onPress={() => setVisible((v) => !v)} style={styles.reveal}>
@@ -238,6 +330,7 @@ export default function RegisterScreen() {
               onChangeText={setBusinessName}
               placeholder="Atelier Kofi…"
               placeholderTextColor={colors.textLight}
+              maxLength={80}
               style={styles.input}
             />
           </Field>
@@ -261,6 +354,34 @@ export default function RegisterScreen() {
                   }))}
                   onChange={setCategoryId}
                 />
+
+                {trades.length > 0 ? (
+                  <View style={styles.summary}>
+                    <Text style={styles.summaryTitle}>
+                      {trades.length} métier{trades.length > 1 ? 's' : ''} sélectionné
+                      {trades.length > 1 ? 's' : ''}
+                    </Text>
+                    <View style={styles.chips}>
+                      {trades.map((id) => (
+                        <Pressable
+                          key={id}
+                          onPress={() => toggleTrade({ _id: id, name: tradeLabels[id] })}
+                          style={[styles.tradeChip, styles.tradeChipActive]}
+                          accessibilityLabel={`Retirer ${tradeLabels[id] ?? 'ce métier'}`}
+                        >
+                          <Text style={[styles.tradeChipText, styles.tradeChipTextActive]}>
+                            {tradeLabels[id] ?? 'Métier'} ✕
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.hint}>
+                    Vous pouvez en choisir plusieurs, dans différentes catégories.
+                  </Text>
+                )}
+
                 {categoryId ? (
                   <View style={styles.chips}>
                     {tradeItems.map((trade) => {
@@ -268,7 +389,7 @@ export default function RegisterScreen() {
                       return (
                         <Pressable
                           key={trade._id}
-                          onPress={() => toggleTrade(trade._id)}
+                          onPress={() => toggleTrade(trade)}
                           style={[styles.tradeChip, active && styles.tradeChipActive]}
                         >
                           <CatalogVisual image={trade.image} icon={trade.icon} size={28} />
@@ -327,6 +448,23 @@ export default function RegisterScreen() {
       ) : null}
 
       <Button label="Créer mon compte" onPress={submit} loading={isLoading} style={styles.action} />
+
+      <Text style={styles.legalNote}>
+        Après inscription, vous devrez lire et valider le{' '}
+        <Text
+          style={styles.link}
+          onPress={() =>
+            router.push({ pathname: '/reglement', params: { audience: role, force: '0' } })
+          }
+        >
+          règlement {role === 'artisan' ? 'artisans' : 'clients'}
+        </Text>{' '}
+        et les{' '}
+        <Text style={styles.link} onPress={() => router.push('/mentions-legales')}>
+          mentions légales
+        </Text>
+        .
+      </Text>
 
       <Text style={styles.footer}>
         Déjà inscrit ?{' '}
@@ -476,6 +614,8 @@ const styles = StyleSheet.create({
   optionText: { ...typography.body },
   optionTextActive: { color: colors.brandDark, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
+  summary: { marginTop: spacing.md },
+  summaryTitle: { ...typography.small, fontWeight: '700', color: colors.text },
   tradeChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -493,6 +633,7 @@ const styles = StyleSheet.create({
   warning: { ...typography.muted, color: '#92400e', backgroundColor: '#fffbeb', padding: spacing.md, borderRadius: radius.md },
   action: { marginTop: spacing.sm },
   link: { color: colors.brand, fontWeight: '700' },
+  legalNote: { ...typography.muted, textAlign: 'center', marginTop: spacing.md, fontSize: 12 },
   footer: { ...typography.muted, textAlign: 'center', marginTop: spacing.lg },
   errorBox: {
     backgroundColor: colors.dangerSurface,
@@ -501,6 +642,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   errorText: { ...typography.muted, color: colors.danger },
+  infoBox: {
+    backgroundColor: colors.brandSurface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  infoText: { ...typography.muted, color: colors.brandDark },
   artisanNote: {
     ...typography.muted,
     backgroundColor: colors.brandSurface,

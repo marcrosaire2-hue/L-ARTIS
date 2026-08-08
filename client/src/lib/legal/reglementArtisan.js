@@ -1,78 +1,104 @@
-import { TERMS_VERSION } from './termsVersion';
+import { TERMS_EFFECTIVE_DATE, TERMS_VERSION } from './termsVersion';
 
-/** Règlement d'utilisation — artisans. */
-
-export const REGLEMENT_ARTISAN = {
-  title: 'Règlement d’utilisation — Artisan',
-  version: TERMS_VERSION,
+/**
+ * Règlement adressé aux artisans — obligations professionnelles sur une
+ * place de marché numérique au Bénin (Code du numérique, Livre IV & V).
+ */
+export const reglementArtisan = {
   audience: 'artisan',
+  title: 'Règlement applicable aux artisans',
+  subtitle: `Version ${TERMS_VERSION} — en vigueur au ${TERMS_EFFECTIVE_DATE}`,
+  intro:
+    'Le présent règlement encadre l’utilisation de L-ARTIS par tout professionnel ou artisan souhaitant présenter ses services sur la plateforme. En créant un compte et en validant ce document, vous acceptez ces règles et vous engagez à respecter la loi n° 2017-20 portant Code du numérique en République du Bénin, ainsi que la réglementation applicable à votre activité.',
   sections: [
     {
-      heading: '1. Acceptation',
+      title: '1. Objet et statut',
       paragraphs: [
-        'En créant un compte artisan sur L-ARTIS, vous acceptez le présent règlement (version ' +
-          TERMS_VERSION +
-          ') ainsi que les obligations légales applicables à votre activité au Bénin.',
+        'L-ARTIS met en relation des clients et des artisans. En vous inscrivant, vous agissez en qualité de professionnel offrant des prestations artisanales sur le territoire de la République du Bénin.',
+        'Vous demeurez seul responsable de vos prestations, de vos devis, de vos prix et de la relation contractuelle avec vos clients.',
+        'L-ARTIS n’est pas votre employeur, ni votre mandataire commercial exclusif, sauf convention écrite contraire.',
       ],
     },
     {
-      heading: '2. Profil et exactitude des informations',
+      title: '2. Conditions d’inscription et validation',
       paragraphs: [
-        'Vous vous engagez à publier un profil sincère : identité, métiers, zone d’intervention, tarifs indicatifs et coordonnées de contact.',
-        'Les numéros RCCM et IFU, lorsqu’ils sont renseignés, doivent correspondre à votre situation réelle. L-ARTIS peut demander des justificatifs avant validation ou en cas de contrôle.',
-        'Toute fausse déclaration peut entraîner le refus, la suspension ou la suppression de votre fiche.',
+        'Vous devez être majeur et habilité à exercer votre métier selon le droit béninois et, le cas échéant, les règles professionnelles applicables à votre corps de métier.',
+        'Les informations fournies (identité, nom commercial, métiers, localisation, contacts, photos, tarifs) doivent être exactes, loyales et à jour.',
+        'Votre fiche n’est publiée qu’après validation par l’équipe L-ARTIS. L-ARTIS peut refuser, suspendre ou retirer une fiche en cas d’informations inexactes, de non-conformité ou de signalement fondé.',
+        'Le numéro de téléphone fourni est votre identifiant de connexion et le contact visible par les clients : vous devez pouvoir y être joint.',
       ],
     },
     {
-      heading: '3. Validation et visibilité',
+      title: '3. Obligations d’information (commerce électronique)',
       paragraphs: [
-        'Les fiches artisans sont soumises à validation par L-ARTIS avant publication. Cette validation ne constitue pas une certification de compétence ni une garantie de qualité.',
-        'L-ARTIS se réserve le droit de refuser ou retirer une fiche ne respectant pas les standards de la plateforme ou la réglementation en vigueur.',
+        'En tant que professionnel présent sur une plateforme électronique, vous devez, conformément au Code du numérique, mettre à disposition des clients les informations essentielles : identité / nom commercial, coordonnées, description claire des prestations, modalités de devis et, lorsque cela s’applique, prix TTC ou bases de calcul.',
+        'Les photos et descriptions doivent correspondre fidèlement à votre activité réelle. Toute publicité trompeuse est interdite.',
+        'Lorsque vous émettez un devis ou une offre, vous précisez les éléments essentiels : nature des travaux, prix ou fourchette, délais approximatifs, conditions de paiement et de réalisation.',
       ],
     },
     {
-      heading: '4. Devis et relation client',
+      title: '4. Qualité des prestations et garanties',
       paragraphs: [
-        'Vous vous engagez à répondre aux demandes de devis de manière professionnelle et dans des délais raisonnables.',
-        'Les propositions (prix, délais, conditions) que vous acceptez via la plateforme engagent votre responsabilité vis-à-vis du client.',
-        'Les litiges relatifs à l’exécution des prestations relèvent de votre relation directe avec le client ; L-ARTIS peut intervenir uniquement à titre de médiation de bonne foi.',
+        'Vous vous engagez à exécuter les prestations avec diligence, dans le respect des règles de l’art et des normes de sécurité applicables.',
+        'Vous êtes tenu aux garanties légales envers le consommateur (conformité, vices cachés, éviction le cas échéant), conformément au droit béninois et à la loi n° 2007-21 portant protection du consommateur.',
+        'Vous assumez seul les litiges nés de l’exécution de vos prestations, sans préjudice du droit de L-ARTIS de suspendre votre compte en cas de manquements répétés ou graves.',
       ],
     },
     {
-      heading: '5. Abonnements',
+      title: '5. Conduite sur la plateforme',
       paragraphs: [
-        'Des formules d’abonnement (Basic, Pro, Business) peuvent être proposées pour des fonctionnalités avancées (visibilité, galerie étendue, statistiques).',
-        'Les tarifs sont affichés en francs CFA (XOF). Sauf mention contraire, l’activation des formules payantes peut être provisoirement manuelle en attendant l’intégration des moyens de paiement Mobile Money.',
-        'Vous pouvez résilier votre abonnement depuis votre espace ; la résiliation prend effet selon les conditions affichées au moment de la souscription.',
+        'Il est interdit de : publier des contenus illicites ; usurper l’identité d’un tiers ; détourner des données clients à des fins non liées à la prestation ; harceler des utilisateurs ; contourner la validation ou les mesures de sécurité ; créer de faux avis.',
+        'Vous devez répondre aux demandes des clients dans un délai raisonnable et avec courtoisie.',
+        'Toute tentative de fraude, d’escroquerie ou d’usurpation entraînera la suspension immédiate du compte et pourra faire l’objet d’un signalement aux autorités.',
       ],
     },
     {
-      heading: '6. Contenus et propriété intellectuelle',
+      title: '6. Relation commerciale et paiements',
       paragraphs: [
-        'Vous garantissez disposer des droits sur les photos, textes et réalisations publiés sur votre fiche.',
-        'Vous accordez à L-ARTIS une licence non exclusive permettant d’afficher ces contenus sur la plateforme et dans les supports de promotion du service.',
+        'Les paiements des prestations se déroulent hors plateforme, sauf si L-ARTIS propose ultérieurement un module de paiement expressément activé.',
+        'Vous êtes responsable du respect de vos obligations fiscales et sociales liées à votre activité (déclarations, IFU, etc.).',
+        'L-ARTIS peut proposer des services payants aux artisans (mise en avant, options) : les conditions tarifaires seront alors communiquées distinctement avant tout engagement.',
       ],
     },
     {
-      heading: '7. Comportement et conformité',
+      title: '7. Données personnelles et confidentialité',
       paragraphs: [
-        'Sont interdits : pratiques trompeuses, contournement de la plateforme pour éviter les obligations, harcèlement, contenus illicites ou atteinte aux droits des tiers.',
-        'Conformément au Code du numérique (loi 2017-20), L-ARTIS coopère avec les autorités compétentes en cas d’infraction manifeste.',
+        'Vous traitez les données des clients que vous recevez via L-ARTIS (nom, téléphone, e-mail, détails de demande) uniquement pour répondre à leurs sollicitations et exécuter les prestations.',
+        'Conformément au Livre V du Code du numérique, vous vous interdisez de revendre, publier ou réutiliser ces données à des fins de prospection non sollicitée ou de toute autre finalité incompatible.',
+        'L-ARTIS traite vos données professionnelles pour publier votre fiche, sécuriser le compte et assurer le support. Vous pouvez demander la rectification ou la suppression de votre compte, sous réserve des obligations légales de conservation.',
       ],
     },
     {
-      heading: '8. Données et confidentialité',
+      title: '8. Propriété intellectuelle et contenus',
       paragraphs: [
-        'Les données de vos clients obtenues via L-ARTIS ne doivent être utilisées que dans le cadre de la relation professionnelle initiée sur la plateforme.',
-        'Vous vous engagez à respecter les principes de minimisation et de sécurité prévus par la loi béninoise en matière de protection des données.',
+        'Vous garantissez disposer des droits sur les photos et textes que vous publiez. Vous concédez à L-ARTIS une licence non exclusive, mondiale et gratuite, pour afficher ces contenus sur la plateforme et dans les communications liées au service.',
+        'La marque et les éléments de L-ARTIS restent la propriété exclusive de l’éditeur.',
       ],
     },
     {
-      heading: '9. Modification et résiliation',
+      title: '9. Responsabilité de la plateforme',
       paragraphs: [
-        'L-ARTIS peut modifier le présent règlement ; une nouvelle acceptation pourra être requise.',
-        'Vous pouvez demander la fermeture de votre compte ; la suppression de la fiche publique interviendra après traitement des demandes en cours.',
+        'L-ARTIS fournit un outil de mise en relation et de présentation. Elle ne garantit pas un volume de demandes ni le comportement des clients.',
+        'En tant qu’hébergeur de contenus utilisateur au sens du Code du numérique, L-ARTIS n’a pas d’obligation générale de surveillance, mais peut retirer un contenu signalé comme manifestement illicite.',
+        'La responsabilité de L-ARTIS est limitée aux dommages directs résultant d’une faute prouvée dans la fourniture du service technique de plateforme.',
+      ],
+    },
+    {
+      title: '10. Suspension, résiliation et modifications',
+      paragraphs: [
+        'Vous pouvez demander la fermeture de votre compte à tout moment.',
+        'L-ARTIS peut suspendre ou résilier l’accès en cas de violation du présent règlement, de rejet définitif de validation, de fraude ou sur injonction des autorités.',
+        'L-ARTIS peut faire évoluer le règlement. En cas de modification substantielle, vous en serez informé et pourrez devoir accepter la nouvelle version pour continuer à utiliser le service.',
+      ],
+    },
+    {
+      title: '11. Droit applicable',
+      paragraphs: [
+        'Le présent règlement est régi par le droit de la République du Bénin, notamment la loi n° 2017-20 portant Code du numérique.',
+        'Tout litige relatif à l’utilisation de L-ARTIS par un artisan fera l’objet d’une tentative de règlement amiable avant saisine des juridictions compétentes du Bénin.',
       ],
     },
   ],
+  acceptanceLabel:
+    'J’ai lu et j’accepte le règlement applicable aux artisans de L-ARTIS, ainsi que les mentions légales. Je m’engage à fournir des informations exactes, à respecter mes obligations professionnelles et à traiter loyalement les données des clients.',
 };
