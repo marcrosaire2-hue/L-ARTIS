@@ -45,6 +45,11 @@ const env = {
   cookie: {
     secure: process.env.COOKIE_SECURE === 'true',
   },
+  // Vérification d'e-mail : désactivée tant qu'aucun envoi n'est possible.
+  // L'hébergeur bloque les ports SMTP sortants (25/465/587) ; réactiver
+  // seulement une fois un fournisseur HTTP branché sur email.service.js,
+  // sinon on renvoie les comptes vers un code qui n'arrivera jamais.
+  emailVerification: process.env.EMAIL_VERIFICATION_ENABLED === 'true',
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: parseInt(process.env.SMTP_PORT, 10) || 587,

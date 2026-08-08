@@ -37,11 +37,17 @@ export default function ReglementScreen() {
 
   // Destination finale du parcours : l'artisan doit arriver dans son espace,
   // c'est là que se complète la fiche dont dépend sa publication.
-  const homeRoute = useMemo(
-    () => (params.next ? String(params.next) : user?.role === 'artisan' ? '/espace-artisan' : '/(tabs)/compte'),
-    [params.next, user]
-  );
-  const needsEmailCheck = Boolean(email) && !user?.isEmailVerified;
+  const homeRoute = useMemo(() => {
+    if (params.next) return String(params.next);
+    if (user?.role !== 'artisan') return '/(tabs)/compte';
+    // Au premier passage, l'artisan enchaîne sur la configuration guidée ;
+    // ensuite, il retrouve directement son espace.
+    return params.onboarding === '1' ? '/bienvenue-artisan' : '/espace-artisan';
+  }, [params.next, params.onboarding, user]);
+  // Détour par la saisie du code seulement si l'inscription a confirmé
+  // l'envoi (params.verify). Sans envoi possible, l'étape est sautée.
+  const needsEmailCheck =
+    params.verify === '1' && Boolean(email) && !user?.isEmailVerified;
 
   useEffect(() => {
     if (user && !user.termsAcceptedAt && !acceptMode && params.force !== '0') {

@@ -34,7 +34,7 @@ const register = catchAsync(async (req, res) => {
     ApiResponse.created(
       verificationCode
         ? 'Inscription réussie. Un code de vérification a été envoyé par e-mail.'
-        : "Inscription réussie. L'envoi du code a échoué : demandez-en un nouveau depuis l'écran de vérification.",
+        : 'Inscription réussie.',
       data
     )
   );

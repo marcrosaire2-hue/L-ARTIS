@@ -248,14 +248,20 @@ export default function RegisterPage() {
     };
 
     try {
-      await registerUser(payload).unwrap();
+      const account = await registerUser(payload).unwrap();
       const email = values.email.trim().toLowerCase();
+      // L'étape de vérification n'a de sens que si un code est réellement
+      // parti : le serveur le dit via emailSent.
+      const verify = account?.emailSent ? '1' : '0';
 
       // Connexion immédiate, puis lecture / validation du règlement.
       try {
         const session = await login({ identifier: values.phone, password: values.password }).unwrap();
         dispatch(credentialsReceived(session));
-        navigate(`/reglement/${role}?accept=1&email=${encodeURIComponent(email)}`, { replace: true });
+        navigate(
+          `/reglement/${role}?accept=1&verify=${verify}&email=${encodeURIComponent(email)}`,
+          { replace: true }
+        );
         return;
       } catch {
         setSuccess({ email });

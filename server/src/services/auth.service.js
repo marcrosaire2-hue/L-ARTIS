@@ -200,10 +200,12 @@ async function register({ email, password, firstName, lastName, phone, role, art
   // buterait ensuite sur « ce numéro existe déjà ». Le code est renvoyable
   // depuis l'écran de vérification (/auth/resend-verification).
   let verificationCode = null;
-  try {
-    verificationCode = await sendVerificationEmail(user);
-  } catch (error) {
-    logger.error(`Code de vérification non envoyé à ${user.email} : ${error.message}`);
+  if (env.emailVerification) {
+    try {
+      verificationCode = await sendVerificationEmail(user);
+    } catch (error) {
+      logger.error(`Code de vérification non envoyé à ${user.email} : ${error.message}`);
+    }
   }
 
   logger.info(`Nouvel utilisateur : ${user.phone} (${role})`);
@@ -363,6 +365,10 @@ async function logout(refreshToken) {
  * `email` (recommandé) restreint la recherche et limite le brute-force.
  */
 async function verifyEmail({ code, email }) {
+  if (!env.emailVerification) {
+    throw new ApiError(503, "La vérification par e-mail est temporairement désactivée.");
+  }
+
   const normalizedCode = String(code || '').replace(/\s/g, '');
   if (!/^\d{6}$/.test(normalizedCode)) {
     throw new ApiError(400, 'Le code doit contenir 6 chiffres');
@@ -407,6 +413,10 @@ async function verifyEmail({ code, email }) {
  * Anti-énumération : réponse OK même si le compte n'existe pas.
  */
 async function resendVerificationEmail(email) {
+  if (!env.emailVerification) {
+    throw new ApiError(503, "La vérification par e-mail est temporairement désactivée.");
+  }
+
   const normalized = String(email || '').trim().toLowerCase();
   if (!normalized) {
     throw new ApiError(400, "L'adresse e-mail est obligatoire");

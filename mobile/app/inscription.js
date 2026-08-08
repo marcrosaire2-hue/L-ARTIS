@@ -118,8 +118,9 @@ export default function RegisterScreen() {
       }),
     };
 
+    let account;
     try {
-      await registerUser(body).unwrap();
+      account = await registerUser(body).unwrap();
     } catch (registerError) {
       setError(errorMessage(registerError, "L'inscription a échoué."));
       return;
@@ -143,6 +144,12 @@ export default function RegisterScreen() {
         audience: role,
         accept: '1',
         email: email.trim().toLowerCase(),
+        // L'étape de vérification n'a de sens que si un code est réellement
+        // parti. Le serveur le dit ; le jour où l'envoi refonctionne, l'étape
+        // réapparaît d'elle-même, sans rien changer ici.
+        verify: account?.emailSent ? '1' : '0',
+        // Premier passage : l'artisan enchaîne sur la configuration guidée.
+        onboarding: '1',
       },
     });
   };

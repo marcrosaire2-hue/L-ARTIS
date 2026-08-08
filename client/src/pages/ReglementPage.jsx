@@ -61,7 +61,9 @@ export default function ReglementPage() {
         return;
       }
 
-      if (email && !result?.user?.isEmailVerified) {
+      // Détour par la saisie du code seulement si l'inscription a confirmé
+      // l'envoi. Sans envoi possible, l'étape est sautée.
+      if (searchParams.get('verify') === '1' && email && !result?.user?.isEmailVerified) {
         navigate(`/verification-email?email=${encodeURIComponent(email)}`, { replace: true });
         return;
       }

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { AlertTriangle, Hammer, Mail, Phone } from 'lucide-react';
+import { Hammer, Mail, Phone } from 'lucide-react';
 import { selectUser } from '../features/auth/authSlice';
-import { Alert, Badge, Button, Card, Container } from '../components/ui';
+import { Badge, Button, Card, Container } from '../components/ui';
 import DeleteAccount from '../components/DeleteAccount';
 import { fullName, initials } from '../lib/format';
 
@@ -32,7 +32,6 @@ export default function AccountPage() {
               <Mail className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
               <dt className="sr-only">Adresse e-mail</dt>
               <dd className="text-slate-700">{user?.email}</dd>
-              {!user?.isEmailVerified && <Badge tone="amber">Non vérifiée</Badge>}
             </div>
             {user?.phone && (
               <div className="flex items-center gap-3">
@@ -55,17 +54,6 @@ export default function AccountPage() {
             </Link>
           </nav>
 
-          {!user?.isEmailVerified && (
-            <div className="mt-6">
-              <Alert tone="amber">
-                <span className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                  Votre adresse e-mail n'est pas encore confirmée. Ouvrez le lien reçu par e-mail
-                  pour activer toutes les fonctionnalités.
-                </span>
-              </Alert>
-            </div>
-          )}
         </Card>
 
         <div className="mt-4">
