@@ -7,8 +7,14 @@ import { useLogoutMutation } from '../features/auth/auth.api';
 import { fullName, initials } from '../lib/format';
 import Sidebar from './Sidebar';
 
+const SidebarWidths = {
+  expanded: 'w-[220px]',
+  minimized: 'w-[60px]',
+};
+
 export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const user = useSelector(selectUser);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -27,21 +33,32 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen lg:flex">
-      {/* Desktop : rail sticky plein viewport */}
-      <div className="hidden shrink-0 lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-y-auto">
-        <Sidebar />
-      </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Sidebar : collapsible sur desktop et mobile */}
+      <aside
+        className={`
+          transition-all duration-300
+          ${
+            sidebarCollapsed
+              ? 'lg:min-w-0 lg:w-[60px] lg:border-0 lg:p-0'
+              : 'lg:min-w-0 lg:w-[220px] lg:border-r lg:border-slate-200 lg:p-4'
+          }
+          ${sidebarCollapsed ? 'lg:hidden' : 'lg:block'}
+          shadow-2xl
+        `}
+      >
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onNavigate={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+      </aside>
 
+      {/* Mobile drawer overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-slate-900/50"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
-          />
-          <aside className="relative flex h-full w-[min(18rem,85vw)] max-w-xs shadow-2xl">
-            <Sidebar onNavigate={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-40 lg:hidden bg-slate-900/80">
+          <div className="absolute inset-0" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+          <aside className="relative flex h-full w-[min(18rem,85vw)] max-w-xs shadow-2xl transform transition-transform">
+            <Sidebar collapsed={sidebarCollapsed} onNavigate={() => setMobileOpen(false)} />
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
@@ -54,18 +71,20 @@ export default function AdminLayout() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur sm:gap-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex-1 flex flex-col">
+<header
+          className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-3 py-3 backdrop-blur lg:px-6 lg:gap-4"
+        >
+          <div className="flex items-center gap-2 lg:hidden">
             <button
               type="button"
               onClick={() => setMobileOpen(true)}
-              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
+              className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
               aria-label="Ouvrir le menu"
             >
               <Menu className="size-5" aria-hidden="true" />
             </button>
-            <div className="flex min-w-0 items-center gap-2 lg:hidden">
+            <div className="flex min-w-0 items-center gap-2">
               <img src="/logo.png" alt="" className="size-7 object-contain" />
               <span className="truncate text-sm font-bold tracking-tight text-slate-900">
                 L-ARTIS
@@ -73,7 +92,7 @@ export default function AdminLayout() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3 lg:gap-4">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-slate-900">{fullName(user)}</p>
               <p className="max-w-[14rem] truncate text-xs text-slate-500">{user?.email}</p>

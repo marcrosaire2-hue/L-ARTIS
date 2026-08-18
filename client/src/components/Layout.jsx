@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Home, LogOut, Menu, Search, User, X } from 'lucide-react';
+import { Home, LogOut, Menu, Search, User, Document, X } from 'lucide-react';
 import { selectUser, sessionEnded } from '../features/auth/authSlice';
 import { useLogoutMutation } from '../features/auth/auth.api';
 import { Button, Container } from './ui';
@@ -9,8 +9,9 @@ import { initials } from '../lib/format';
 
 /* La navigation basse mobile : l'artisan comme le client sont sur téléphone. */
 const MOBILE_NAV = [
-  { to: '/', label: 'Accueil', icon: Home, end: true },
+  { to: '/', label: 'Accueil', icon: Home },
   { to: '/recherche', label: 'Rechercher', icon: Search },
+  { to: '/devis', label: 'Devis', icon: Document },
   { to: '/compte', label: 'Compte', icon: User },
 ];
 
@@ -171,14 +172,13 @@ function Header() {
 function MobileNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white md:hidden">
-      <div className="grid grid-cols-3">
-        {MOBILE_NAV.map(({ to, label, icon: Icon, end }) => (
+      <div className="grid grid-cols-4">
+        {MOBILE_NAV.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
-            end={end}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 py-2.5 text-xs ${
+              `flex flex-col items-center gap-1 py-2 text-xs ${
                 isActive ? 'text-brand-700' : 'text-slate-500'
               }`
             }

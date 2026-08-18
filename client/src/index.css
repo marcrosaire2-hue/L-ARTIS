@@ -35,7 +35,7 @@ body {
 }
 
 /* Réserve la place de la barre de navigation mobile fixe */
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   body {
     padding-bottom: 4rem;
   }
