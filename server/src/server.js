@@ -22,6 +22,9 @@ async function startServer() {
 
     server.listen(env.port, () => {
       logger.info(`API démarrée : http://localhost:${env.port}${env.apiPrefix}`);
+      logger.info(
+        `Vérification e-mail : ${env.emailVerification ? 'activée' : 'désactivée'}`
+      );
     });
 
     app.set('trust proxy', env.isProduction ? 1 : 0);
